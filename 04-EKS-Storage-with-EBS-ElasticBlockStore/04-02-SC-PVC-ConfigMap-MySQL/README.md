@@ -38,6 +38,11 @@ kubectl get pv
 - 볼륨
 - 볼륨 마운트
 
+---
+```
+eksctl create addon --name aws-ebs-csi-driver --cluster eksdemo2 --region ap-northeast-2 --force
+```
+
 ### MySQL ClusterIP Service 매니페스트 생성
 - 이 설계에서는 MySQL 파드가 하나만 존재하므로 `ClusterIP: None`을 사용해 별도의 IP를 생성/할당하지 않고 `Pod IP Address`를 사용합니다.
 

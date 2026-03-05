@@ -56,7 +56,7 @@ kubectl get pvc -n dev2
 - **관찰-2:** `Storage Class(SC)와 Persistent Volume(PV)`은 공용으로 생성되며 네임스페이스가 없습니다.
 ```
 # sc, pv 목록
-kubect get sc,pv
+kubectl get sc,pv
 ```
 ## Step-04: 애플리케이션 접근
 ### Dev1 네임스페이스
@@ -101,7 +101,8 @@ kubectl get sc,pv
 kubectl delete sc ebs-sc
 
 # 모든 네임스페이스에서 모든 객체 확인
-kubectl get all -all-namespaces
+kubectl get pods --all-namespaces
+
 ```
 
 ## 참고 자료

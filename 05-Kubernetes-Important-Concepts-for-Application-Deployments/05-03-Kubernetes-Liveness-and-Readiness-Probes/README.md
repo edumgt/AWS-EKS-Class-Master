@@ -66,7 +66,6 @@ kubectl get sc,pvc,pv
 ---
 # EKS 환경에서 노드당 Pod 개수 제한 정리 (현재 결과: pods=17)
 
-작성일: 2026-02-03 (Asia/Seoul)
 
 ---
 

@@ -55,9 +55,9 @@ eksctl utils associate-iam-oidc-provider \
 - 이 애드온들은 노드 그룹 역할에 필요한 IAM 정책을 자동으로 생성해 줍니다.
 ```
 # 퍼블릭 노드 그룹 생성
-eksctl create nodegroup --cluster=eksdemo3 \
+eksctl create nodegroup --cluster=eksdemo2 \
                         --region=ap-northeast-2 \
-                        --name=eksdemo3-ng-public4 \
+                        --name=eksdemo2-ng-public2 \
                         --node-type=t3.medium \
                         --nodes=1 \
                         --nodes-min=1 \
