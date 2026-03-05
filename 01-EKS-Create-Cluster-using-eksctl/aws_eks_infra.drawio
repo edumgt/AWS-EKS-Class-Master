@@ -1,0 +1,81 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0" version="29.0.0">
+  <diagram id="aws-eks-infra" name="Page-1">
+    <mxGraphModel dx="1420" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="AWS Infrastructure Overview" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="20" width="320" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- AWS Account Boundary -->
+        <mxCell id="aws" value="AWS Account" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="60" width="1500" height="760" as="geometry"/>
+        </mxCell>
+
+        <!-- CloudFormation -->
+        <mxCell id="cfn" value="CloudFormation&#xa;Stack / Template" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="110" width="220" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- IAM -->
+        <mxCell id="iam" value="IAM&#xa;Roles / Policies" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="110" width="220" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- VPC -->
+        <mxCell id="vpc" value="VPC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="240" width="1280" height="500" as="geometry"/>
+        </mxCell>
+
+        <!-- Public Subnet -->
+        <mxCell id="pubsub" value="Public Subnet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="180" y="310" width="560" height="360" as="geometry"/>
+        </mxCell>
+
+        <!-- Private Subnet -->
+        <mxCell id="prisub" value="Private Subnet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="790" y="310" width="560" height="360" as="geometry"/>
+        </mxCell>
+
+        <!-- EKS Cluster -->
+        <mxCell id="eks" value="Elastic Kubernetes Service (EKS)&#xa;Cluster / Control Plane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="380" width="300" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- EC2 Node Group -->
+        <mxCell id="ec2" value="EC2&#xa;Worker Nodes / Node Group" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="930" y="380" width="280" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Optional note -->
+        <mxCell id="note" value="Typical relationship:&#xa;CloudFormation provisions VPC, EKS, EC2 node group, and IAM resources." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="470" y="120" width="520" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges -->
+        <mxCell id="e1" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#B85450;" edge="1" parent="1" source="cfn" target="vpc">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#B85450;" edge="1" parent="1" source="cfn" target="eks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#B85450;" edge="1" parent="1" source="cfn" target="ec2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="Cluster Role" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#9673A6;fontSize=12;" edge="1" parent="1" source="iam" target="eks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="Instance Role" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#9673A6;fontSize=12;" edge="1" parent="1" source="iam" target="ec2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="Schedules Pods" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#D79B00;fontSize=12;" edge="1" parent="1" source="eks" target="ec2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -343,3 +343,43 @@ flowchart TD
   ![image](./image.png)
 
   
+---
+
+```
+# 1) 클러스터(컨트롤 플레인) 생성 - 저장소 가이드 기준
+eksctl create cluster \
+  --name eksdemo2 \
+  --region ap-northeast-2 \
+  --zones ap-northeast-2a,ap-northeast-2b \
+  --without-nodegroup
+```
+---
+```
+# 2) OIDC 연결
+eksctl utils associate-iam-oidc-provider \
+  --region ap-northeast-2 \
+  --cluster eksdemo2 \
+  --approve
+```
+---
+```
+# 3) 노드그룹 생성(관리형)
+eksctl create nodegroup \
+  --cluster eksdemo2 \
+  --region ap-northeast-2 \
+  --name eksdemo2-ng-public1 \
+  --node-type t3.medium \
+  --nodes 1 \
+  --nodes-min 1 \
+  --nodes-max 2 \
+  --node-volume-size 20 \
+  --managed
+```
+---
+```
+# 4) 확인
+eksctl get cluster --region ap-northeast-2
+eksctl get nodegroup --cluster eksdemo2 --region ap-northeast-2
+kubectl get nodes -o wide
+```
+---
