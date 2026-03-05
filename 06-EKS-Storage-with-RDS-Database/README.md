@@ -131,3 +131,32 @@ kubectl delete -f kube-manifests/
 # Verify current Kubernetes Objects
 kubectl get all
 ```
+
+```
+aws cloudformation deploy \
+  --stack-name eks-rds-mysql \
+  --template-file rds-stack.yaml \
+  --region ap-northeast-2 \
+  --parameter-overrides \
+    VpcId=vpc-0111cf517c23abb9c \
+    SubnetIdA=subnet-0f1a8ef829d531da4 \
+    SubnetIdB=subnet-09c2aa6cdebaf9f45 \
+    DBName=usermgmtdb \
+    DBUsername=dbadmin \
+    DBPassword='dbpassword11' \
+  --no-cli-pager
+```
+
+---
+### cloud formation 처리 중 오류는 삭제 필요
+```
+aws cloudformation delete-stack \
+  --stack-name eks-rds-mysql \
+  --region ap-northeast-2 \
+  --no-cli-pager
+
+aws cloudformation wait stack-delete-complete \
+  --stack-name eks-rds-mysql \
+  --region ap-northeast-2 \
+  --no-cli-pager
+```

@@ -1,0 +1,73 @@
+# rds-stack.yaml (CloudFormation)
+AWSTemplateFormatVersion: '2010-09-09'
+Description: RDS MySQL for EKS demo
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: EKS VPC ID (e.g. vpc-xxxxxxxx)
+  SubnetIdA:
+    Type: AWS::EC2::Subnet::Id
+    Description: Private/Public subnet in AZ-a
+  SubnetIdB:
+    Type: AWS::EC2::Subnet::Id
+    Description: Private/Public subnet in AZ-b
+  DBName:
+    Type: String
+    Default: usermgmtdb
+  DBUsername:
+    Type: String
+    Default: dbadmin
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Default: dbpassword11
+
+Resources:
+  EksRdsDbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow MySQL 3306
+      GroupName: eks-rds-db-securitygroup
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0 # 학습용, 운영에서는 제한 권장
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  EksRdsDbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: eks-rds-db-subnetgroup
+      DBSubnetGroupDescription: EKS RDS DB Subnet Group
+      SubnetIds:
+        - !Ref SubnetIdA
+        - !Ref SubnetIdB
+
+  UserMgmtDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: usermgmtdb
+      Engine: mysql
+      EngineVersion: "8.4.7"
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      DBName: !Ref DBName
+      PubliclyAccessible: true
+      VPCSecurityGroups:
+        - !GetAtt EksRdsDbSecurityGroup.GroupId
+      DBSubnetGroupName: !Ref EksRdsDbSubnetGroup
+      BackupRetentionPeriod: 0
+      MultiAZ: false
+      StorageType: gp2
+      DeletionProtection: false
+
+Outputs:
+  RDSEndpoint:
+    Value: !GetAtt UserMgmtDB.Endpoint.Address
