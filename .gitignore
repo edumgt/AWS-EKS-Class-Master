@@ -2,3 +2,6 @@
 /FUTURE-TOPCS
 
 kubectl
+
+*.pem
+*.key
