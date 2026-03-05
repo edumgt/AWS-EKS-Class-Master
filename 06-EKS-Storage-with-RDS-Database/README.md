@@ -133,6 +133,21 @@ kubectl get all
 ```
 
 ```
+aws ec2 describe-subnets \
+  --region ap-northeast-2 \
+  --filters "Name=vpc-id,Values=vpc-0111cf517c23abb9c" \
+  --query "Subnets[].{SubnetId:SubnetId,AZ:AvailabilityZone,Name:Tags[?Key=='Name']|[0].Value}" \
+  --output table
+```
+
+```
+aws ec2 describe-vpcs --region ap-northeast-2 --query "Vpcs[].{VpcId:VpcId,Name:Tags[?Key=='Name']|[0].Value}" --output table
+aws ec2 describe-subnets --region ap-northeast-2 --filters "Name=vpc-id,Values=<VPC_ID>" --query "Subnets[].{SubnetId:SubnetId,AZ:AvailabilityZone,Name:Tags[?Key=='Name']|[0].Value}" --output table
+```
+
+
+
+```
 aws cloudformation deploy \
   --stack-name eks-rds-mysql \
   --template-file rds-stack.yaml \
@@ -159,4 +174,9 @@ aws cloudformation wait stack-delete-complete \
   --stack-name eks-rds-mysql \
   --region ap-northeast-2 \
   --no-cli-pager
+```
+
+---
+```
+kubectl apply -f kube-manifests/ -n dev4
 ```

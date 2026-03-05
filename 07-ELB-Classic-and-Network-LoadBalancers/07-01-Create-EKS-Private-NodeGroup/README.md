@@ -20,9 +20,17 @@ eksctl delete nodegroup eksdemo1-ng-public1 --cluster eksdemo1
 - 핵심 옵션은 `--node-private-networking` 입니다.
 
 ```
-eksctl create nodegroup --cluster=eksdemo2 \
+eksctl create cluster --name=eksdemo1 \
+                      --region=ap-northeast-2 \
+                      --zones=ap-northeast-2a,ap-northeast-2b \
+                      --without-nodegroup 
+```
+
+
+```
+eksctl create nodegroup --cluster=eksdemo1 \
                         --region=ap-northeast-2 \
-                        --name=eksdemo2-ng-private2 \
+                        --name=eksdemo1-ng-private1 \
                         --node-type=t3.medium \
                         --nodes-min=2 \
                         --nodes-max=4 \
