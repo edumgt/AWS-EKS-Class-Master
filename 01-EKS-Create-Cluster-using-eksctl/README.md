@@ -12,3 +12,7 @@
   - EKS 워커 노드
   - EKS Fargate 프로파일
 - EKS 클러스터 삭제
+
+---
+
+![](./aws_eks_infra.png)
