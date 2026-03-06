@@ -458,21 +458,21 @@ helm repo update
 ## 템플릿
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
-  --set clusterName=eksdemo2 \
+  --set clusterName=eksdemo1 \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
   --set region=ap-northeast-2 \
-  --set vpcId=vpc-0f871ce4d93d12962 \
+  --set vpcId=vpc-0197daa87ab3234f3 \
   --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
 
 ## 클러스터 이름, 리전 코드, VPC ID, 이미지 리포지토리 계정/리전 코드를 실제 값으로 교체
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
-  --set clusterName=eksdemo1 \
+  --set clusterName=eksdemo2 \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
-  --set region=us-east-1 \
-  --set vpcId=vpc-0165a396e41e292a3 \
+  --set region=ap-northeast-2 \
+  --set vpcId=vpc-0111cf517c23abb9c \
   --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
 ```
 - **AWS Load Balancer Controller 설치 단계 출력 예시**
@@ -536,7 +536,7 @@ kubectl get pods -n kube-system
 
 # AWS LB Controller 파드-1 로그 확인
 kubectl -n kube-system logs -f <POD-NAME> 
-kubectl -n kube-system logs -f  aws-load-balancer-controller-86b598cbd6-5pjfk
+kubectl -n kube-system logs -f aws-load-balancer-controller-68596697df-kqp5s
 
 # AWS LB Controller 파드-2 로그 확인
 kubectl -n kube-system logs -f <POD-NAME> 
@@ -625,8 +625,6 @@ CHECK-3: Volumes 확인
 # AWS Load Balancer Controller 제거
 helm uninstall aws-load-balancer-controller -n kube-system 
 ```
-
-
 
 ## 단계-05: Ingress Class 개념
 - Ingress Class가 무엇인지 이해합니다.

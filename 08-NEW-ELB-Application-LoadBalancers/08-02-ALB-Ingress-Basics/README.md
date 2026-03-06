@@ -245,6 +245,8 @@ kubectl get po -n kube-system
 kubectl logs -f aws-load-balancer-controller-794b7844dd-8hk7n -n kube-system
 ```
 
+
+
 ## 단계-09: 정리
 ```t
 # Kubernetes 리소스 삭제

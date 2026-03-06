@@ -66,19 +66,14 @@ kubectl exec -it curl-pod -- sh
 
 # 이제 외부 주소 또는 내부 서비스에 curl을 사용할 수 있습니다.
 curl http://google.com/
-curl <INTERNAL-INGRESS-LB-DNS>
-
-# 기본 백엔드 Curl 테스트
-curl internal-ingress-internal-lb-1839544354.us-east-1.elb.amazonaws.com
+curl internal-ingress-internal-lb-553684158.ap-northeast-2.elb.amazonaws.com
 
 # App1 Curl 테스트
-curl internal-ingress-internal-lb-1839544354.us-east-1.elb.amazonaws.com/app1/index.html
+curl internal-ingress-internal-lb-553684158.ap-northeast-2.elb.amazonaws.com/app1/index.html
 
 # App2 Curl 테스트
-curl internal-ingress-internal-lb-1839544354.us-east-1.elb.amazonaws.com/app2/index.html
+curl internal-ingress-internal-lb-553684158.ap-northeast-2.elb.amazonaws.com/app2/index.html
 
-# App3 Curl 테스트
-curl internal-ingress-internal-lb-1839544354.us-east-1.elb.amazonaws.com
 ```
 
 

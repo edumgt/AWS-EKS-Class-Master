@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: stress-pod
+spec:
+  restartPolicy: Never
+  containers:
+  - name: stress
+    image: polinux/stress
+    command: ["stress"]
+    args: ["--cpu", "4", "--vm", "2", "--vm-bytes", "512M", "--timeout", "1800s"]
