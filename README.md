@@ -254,3 +254,5 @@ o1-cluster   --no-enable-termination-protection
 ---
 ### 3D 포맷의 아키텍쳐 구성도
 https://app.cloudcraft.co/view/d49525d1-c004-4604-a228-765fae1ae18a?key=736e0286-1c5f-444a-9ce7-282027410eff
+
+![](./cloudcraft%20ap-northeast-2.png)
