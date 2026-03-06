@@ -1,12 +1,13 @@
 # AWS - 클래식 로드 밸런서 - CLB
 
 ## 단계-01: AWS 클래식 로드 밸런서 Kubernetes 매니페스트 생성 및 배포
-- **04-ClassicLoadBalancer.yml**
+- **08-ClassicLoadBalancer.yml**
 ```yml
 apiVersion: v1
 kind: Service
 metadata:
   name: clb-usermgmt-restapp
+  namespace: dev3
   labels:
     app: usermgmt-restapp
 spec:
@@ -59,11 +60,15 @@ NodeIP:NodePort 로 외부에서 접근 가능
 # 모든 매니페스트 배포
 kubectl apply -f kube-manifests/
 
-# 서비스 목록 조회 (새로 생성된 CLB 서비스 확인)
-kubectl get svc
+# dev3 네임스페이스 기준 서비스 목록 조회 (새로 생성된 CLB 서비스 확인)
+kubectl get svc -n dev3
 
 # 파드 확인
-kubectl get pods
+kubectl get pods -n dev3
+
+# CLB 서비스 상세 확인
+kubectl get svc -n dev3 clb-usermgmt-restapp -o wide
+kubectl describe svc -n dev3 clb-usermgmt-restapp
 ```
 ---
 # kubectl apply 결과가 eksdemo1 / eksdemo2 중 어디에 적용됐는지 확인하기
@@ -171,5 +176,5 @@ http://<CLB-DNS-NAME>/usermgmt/health-status
 kubectl delete -f kube-manifests/
 
 # 현재 Kubernetes 오브젝트 확인
-kubectl get all
+kubectl get all -n dev3
 ```
