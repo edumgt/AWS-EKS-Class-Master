@@ -256,3 +256,5 @@ o1-cluster   --no-enable-termination-protection
 https://app.cloudcraft.co/view/d49525d1-c004-4604-a228-765fae1ae18a?key=736e0286-1c5f-444a-9ce7-282027410eff
 
 ![](./cloudcraft%20ap-northeast-2.png)
+
+https://chatgpt.com/share/69aa2807-4610-8007-899e-c1f857237336
