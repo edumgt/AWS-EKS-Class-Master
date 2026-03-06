@@ -2,6 +2,12 @@
 
 이 문서는 이 저장소에서 사용하는 기술 스택과 AWS 리소스를 한눈에 보는 아키텍처 요약입니다.
 
+## 다이어그램 파일
+- 최신 편집본(권장): `ARCHITECTURE.drawio`
+- Preview image (`svg`): `ARCHITECTURE.svg`
+
+![AWS EKS Masterclass Architecture](./ARCHITECTURE.svg)
+
 ## 기술 스택
 - Kubernetes: EKS, Deployment/Service/Ingress, HPA/VPA/Cluster Autoscaler
 - Containers: Docker, Nginx, Amazon ECR
