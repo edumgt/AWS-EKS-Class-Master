@@ -114,6 +114,129 @@ kubectl exec -it mariadb-0 -n airflow -- \
 
 ---
 
+### 🔍 기술 심화: Headless Service 와 StatefulSet DNS
+
+#### Headless Service 란?
+
+일반 `ClusterIP` 서비스는 kube-proxy 가 가상 IP(VIP)를 하나 할당하고,  
+그 VIP 로 들어오는 트래픽을 뒤쪽 Pod 들에 **로드밸런싱**합니다.
+
+**Headless Service** (`clusterIP: None`) 는 VIP 를 전혀 할당하지 않습니다.  
+대신 CoreDNS 가 서비스 이름 쿼리에 대해 **Pod IP 를 직접 반환**합니다.
+
+```
+일반 ClusterIP 서비스 DNS 흐름
+─────────────────────────────────────────────────────────────
+클라이언트  →  mariadb.airflow.svc.cluster.local
+              ↓ DNS 쿼리 (CoreDNS)
+              ↓ 단일 가상 IP (예: 10.100.45.23) 반환  ← VIP
+              ↓ kube-proxy 에 의해 실제 Pod IP 로 DNAT
+
+Headless Service DNS 흐름
+─────────────────────────────────────────────────────────────
+클라이언트  →  mariadb.airflow.svc.cluster.local
+              ↓ DNS 쿼리 (CoreDNS)
+              ↓ 실제 Pod IP 목록 직접 반환 (A 레코드 다수)
+              ↓ 클라이언트가 직접 Pod IP 에 연결
+```
+
+#### StatefulSet + Headless Service = 안정적 Pod DNS
+
+StatefulSet 의 `spec.serviceName` 이 Headless Service 이름과 연결되면,  
+각 Pod 는 아래 형식의 **고정 DNS 이름**을 부여받습니다.
+
+```
+<pod-name>.<headless-service-name>.<namespace>.svc.cluster.local
+
+예시:
+  mariadb-0.mariadb.airflow.svc.cluster.local  ← mariadb-0 Pod 의 고정 DNS
+  mariadb-1.mariadb.airflow.svc.cluster.local  ← replicas 늘릴 경우
+```
+
+Pod 가 재시작되거나 다른 노드로 이동해도 **DNS 이름은 변하지 않습니다.**  
+IP 는 바뀌지만 CoreDNS 가 새 IP 로 자동 업데이트합니다.
+
+#### 일반 Deployment 에서는 왜 이것이 불가능한가?
+
+| 항목 | Deployment + ClusterIP | StatefulSet + Headless |
+|------|------------------------|------------------------|
+| Pod 이름 | 랜덤 해시 (nginx-7d4f9c-xk2p8) | 순번 고정 (mariadb-0) |
+| 개별 Pod DNS | ❌ 없음 | ✅ pod-name.svc.ns.svc.cluster.local |
+| Pod 재시작 후 DNS | 변경됨 | 동일 이름 유지 |
+| 영구 볼륨 재연결 | ❌ 보장 안 됨 | ✅ 같은 PVC 재마운트 보장 |
+| DB 등 Stateful 워크로드 | 부적합 | 적합 |
+
+#### Airflow 가 Headless DNS 를 사용하는 이유
+
+```yaml
+# helm-values/airflow-values.yaml
+data:
+  metadataConnection:
+    host: mariadb.airflow.svc.cluster.local  # ← Headless Service 이름
+```
+
+- `mariadb.airflow.svc.cluster.local` 은 Headless Service 이름으로 쿼리하면  
+  현재 Running 상태인 `mariadb-0` 의 Pod IP 를 직접 반환합니다.
+- MariaDB 는 단일 인스턴스 DB 이므로 로드밸런싱이 필요 없고,  
+  특정 Pod(mariadb-0)에 **직접 연결**하는 것이 올바른 동작입니다.
+- Pod IP 가 변경되어도 DNS 가 자동으로 새 IP 로 갱신되므로  
+  Airflow 코드 변경 없이 재연결이 가능합니다.
+
+#### DNS 동작 실습 확인
+
+```bash
+# CoreDNS 가 Headless Service 에 대해 반환하는 레코드 확인
+# (임시 nslookup Pod 실행)
+kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never \
+  --namespace airflow -- sh -c "
+    echo '=== Headless Service (Pod IP 직접 반환) ==='
+    nslookup mariadb.airflow.svc.cluster.local
+
+    echo '=== StatefulSet Pod 개별 DNS ==='
+    nslookup mariadb-0.mariadb.airflow.svc.cluster.local
+  "
+
+# 예상 출력:
+# === Headless Service (Pod IP 직접 반환) ===
+# Server:    10.96.0.10
+# Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local
+# Name:      mariadb.airflow.svc.cluster.local
+# Address 1: 192.168.12.45   ← mariadb-0 의 실제 Pod IP
+#
+# === StatefulSet Pod 개별 DNS ===
+# Name:      mariadb-0.mariadb.airflow.svc.cluster.local
+# Address 1: 192.168.12.45   ← 동일한 Pod IP
+
+# SRV 레코드도 자동 생성됨 (포트 정보 포함)
+kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never \
+  --namespace airflow -- nslookup -type=SRV \
+  _mysql._tcp.mariadb.airflow.svc.cluster.local
+```
+
+#### DNS 쿼리 경로 (내부 구조)
+
+```
+Airflow Pod (airflow namespace)
+  │
+  │  getaddrinfo("mariadb.airflow.svc.cluster.local")
+  ↓
+/etc/resolv.conf (Pod 내부)
+  nameserver 10.96.0.10        ← kube-dns ClusterIP (CoreDNS)
+  search airflow.svc.cluster.local svc.cluster.local cluster.local
+  │
+  ↓  UDP 53 쿼리
+CoreDNS Pod (kube-system namespace)
+  │  etcd / kube-apiserver 에서 Endpoints 조회
+  │  mariadb Service → clusterIP: None → Endpoints 에서 Pod IP 열람
+  ↓
+응답: A 레코드 → 192.168.12.45 (mariadb-0 Pod IP)
+  │
+  ↓  TCP 3306 직접 연결
+MariaDB Pod (mariadb-0)
+```
+
+---
+
 ## Step-04: Fernet Key 및 Webserver Secret Key 생성
 
 Airflow 는 DB에 저장하는 민감 정보를 Fernet 키로 암호화합니다.
@@ -296,35 +419,250 @@ kubectl logs -n airflow <worker-pod-name>
 
 ---
 
-## Step-09: KubernetesExecutor 동작 원리
+## Step-09: KubernetesExecutor 심화 기술 설명
+
+### 9-1. 내부 동작 시퀀스
+
+KubernetesExecutor 는 Airflow Scheduler 내부에 내장된 Kubernetes 클라이언트입니다.  
+별도의 Worker 프로세스나 Redis/RabbitMQ 없이, **Kubernetes API Server 에 직접 Pod 생성을 요청**합니다.
 
 ```
-Scheduler
-  │
-  ├─ DAG 파싱 (git-sync 사이드카가 /opt/airflow/dags 에 자동 동기화)
-  │
-  └─ 태스크 실행 시점
-       │
-       ├─ Kubernetes API 호출: Worker Pod 생성 요청
-       │     image: apache/airflow:2.9.3
-       │     namespace: airflow
-       │     envs: AIRFLOW__CORE__EXECUTOR=KubernetesExecutor
-       │
-       ├─ Worker Pod 실행 (태스크 코드 실행)
-       │
-       └─ 완료 후 Worker Pod 자동 삭제 (delete_worker_pods: True)
+┌──────────────────────────────────────────────────────────────────┐
+│ Airflow Scheduler Pod                                            │
+│                                                                  │
+│  1. DAG 파싱 스레드                                              │
+│     └─ git-sync 사이드카가 /opt/airflow/dags 에 동기화한         │
+│        Python 파일을 읽어 실행할 태스크 목록 계산               │
+│                                                                  │
+│  2. Task Instance 상태 관리 (메타데이터 DB ← MariaDB Pod)        │
+│     └─ scheduled → queued → running → success/failed            │
+│                                                                  │
+│  3. KubernetesExecutor._process_tasks()                          │
+│     └─ queued 상태 태스크 감지                                   │
+│     └─ kubernetes.client.CoreV1Api.create_namespaced_pod() 호출  │
+│                                                                  │
+│  4. Worker Pod 완료 감지 (Watch API)                              │
+│     └─ Pod 상태 Succeeded → Task Instance 를 success 로 갱신   │
+│     └─ Pod 상태 Failed    → Task Instance 를 failed 로 갱신     │
+│     └─ delete_worker_pods: True 이면 Pod 자동 삭제              │
+└──────────────────────────────────────────────────────────────────┘
+         │  Kubernetes API (in-cluster config)
+         ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ EKS API Server                                                   │
+│  create Pod → kube-scheduler → 노드 배정 → kubelet → 컨테이너  │
+└──────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ Worker Pod (수명: 태스크 실행 시간만큼)                           │
+│  image: apache/airflow:2.9.3                                     │
+│  command: airflow tasks run <dag_id> <task_id> <run_id>          │
+│  envs: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=mysql+mysqldb://...   │
+│        AIRFLOW__CORE__EXECUTOR=KubernetesExecutor                │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-### CeleryExecutor 와 비교
+### 9-2. Worker Pod 네이밍 규칙
+
+Airflow 가 생성하는 Worker Pod 이름은 다음 규칙을 따릅니다:
+
+```
+<dag-id>-<task-id>-<run-id-hash>-<random>
+
+예시:
+  sample-etl-dag-extract-20250101t000000-a3f2c1
+  sample-etl-dag-transform-20250101t000000-b7e9d4
+  sample-etl-dag-load-20250101t000000-c1a8f2
+```
+
+```bash
+# 실행 중인 Worker Pod 확인 (component=worker 레이블)
+kubectl get pods -n airflow -l airflow-worker=true
+
+# Pod 이름으로 어떤 태스크인지 확인
+kubectl get pods -n airflow -o custom-columns=\
+"NAME:.metadata.name,DAG:.metadata.labels.dag_id,TASK:.metadata.labels.task_id,STATUS:.status.phase"
+```
+
+### 9-3. RBAC — Scheduler 의 권한 요구사항
+
+Scheduler 가 Kubernetes API 를 호출하려면 적절한 RBAC 권한이 필요합니다.  
+Airflow Helm Chart 는 설치 시 이 권한을 자동으로 구성합니다.
+
+```yaml
+# Helm Chart 가 자동 생성하는 ClusterRole (핵심 권한)
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "get", "list", "watch", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create", "get"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+```
+
+```bash
+# Helm Chart 가 생성한 ServiceAccount 확인
+kubectl get serviceaccount -n airflow
+
+# Scheduler 의 ClusterRoleBinding 확인
+kubectl get rolebinding -n airflow
+kubectl get clusterrolebinding | grep airflow
+
+# Scheduler 가 실제로 Pod 를 생성할 수 있는지 권한 확인
+kubectl auth can-i create pods \
+  --namespace airflow \
+  --as system:serviceaccount:airflow:airflow-scheduler
+```
+
+### 9-4. Worker Pod 에 전달되는 환경변수
+
+Scheduler 는 Worker Pod 를 생성할 때 메타데이터 DB 연결 정보 등을  
+**환경변수**로 자동 주입합니다.
+
+```bash
+# 실행 중인 Worker Pod 의 환경변수 확인
+kubectl exec -n airflow <worker-pod-name> -- env | grep AIRFLOW
+
+# 주요 환경변수:
+# AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+#   = mysql+mysqldb://airflow:airflow123!@mariadb.airflow.svc.cluster.local:3306/airflow_meta
+# AIRFLOW__CORE__EXECUTOR       = KubernetesExecutor
+# AIRFLOW__CORE__FERNET_KEY     = (암호화된 Fernet 키)
+# AIRFLOW__CORE__DAGS_FOLDER    = /opt/airflow/dags
+```
+
+Worker Pod 는 메타데이터 DB(MariaDB)에 직접 연결하여  
+태스크 실행 결과(시작시간, 완료시간, 상태, 로그 경로)를 기록합니다.
+
+### 9-5. DAG 파일 전달 방식 (GitSync 사이드카)
+
+KubernetesExecutor 에서는 Scheduler 와 Worker Pod 가 **다른 Pod** 이므로,  
+DAG 파일을 Worker 에도 전달해야 합니다.
+
+```
+Scheduler Pod                     Worker Pod
+┌─────────────────────┐           ┌─────────────────────┐
+│ git-sync (sidecar)  │           │ git-sync (sidecar)  │
+│   └─ /dags 동기화   │           │   └─ /dags 동기화   │
+│                     │           │                     │
+│ airflow-scheduler   │           │ airflow-worker      │
+│   └─ /dags 읽기     │           │   └─ /dags 읽기     │
+└─────────────────────┘           └─────────────────────┘
+         ↕                                 ↕
+    git remote (GitHub 등)          git remote (동일 repo)
+```
+
+Worker Pod 도 **자체 git-sync 사이드카**를 포함하여 기동합니다.  
+이 때문에 `dags.gitSync.enabled: true` 설정이 Worker 에도 적용됩니다.
+
+```bash
+# Worker Pod 의 git-sync 사이드카 로그 확인
+kubectl logs -n airflow <worker-pod-name> -c git-sync
+```
+
+### 9-6. 리소스 격리와 제한
+
+각 태스크는 독립 Pod 에서 실행되므로, 태스크별 CPU/메모리 제한이 가능합니다.
+
+```python
+# DAG 코드에서 태스크별 Pod 리소스 직접 지정
+from airflow.kubernetes.pod import Resources
+
+with dag:
+    heavy_task = BashOperator(
+        task_id="heavy_task",
+        bash_command="python heavy_processing.py",
+        executor_config={
+            "pod_override": k8s.V1Pod(
+                spec=k8s.V1PodSpec(
+                    containers=[
+                        k8s.V1Container(
+                            name="base",
+                            resources=k8s.V1ResourceRequirements(
+                                requests={"cpu": "2", "memory": "4Gi"},
+                                limits={"cpu": "4", "memory": "8Gi"},
+                            ),
+                        )
+                    ]
+                )
+            )
+        },
+    )
+```
+
+### 9-7. Worker Pod 라이프사이클과 상태 흐름
+
+```
+[Scheduler 가 태스크 감지]
+        │
+        ▼
+  ┌───────────┐
+  │  queued   │  ← Scheduler 가 Kubernetes API 로 Pod 생성 요청
+  └─────┬─────┘
+        │ Pod Pending (노드 배정 대기, 이미지 Pull 등)
+        ▼
+  ┌───────────┐
+  │  running  │  ← Pod Running, airflow tasks run 명령 실행 중
+  └─────┬─────┘
+        │
+        ├── 성공 → Pod Succeeded → Task Instance: success
+        │                          (delete_worker_pods: True 이면 Pod 삭제)
+        │
+        └── 실패 → Pod Failed    → Task Instance: failed
+                                   (delete_worker_pods_on_failure: False
+                                    이면 Pod 유지 → 로그 확인 가능)
+```
+
+```bash
+# 실패한 Worker Pod 로그 확인 (delete_worker_pods_on_failure: False 설정 시)
+kubectl get pods -n airflow --field-selector=status.phase=Failed
+kubectl logs -n airflow <failed-worker-pod-name>
+
+# 태스크 재실행 (Web UI 또는 CLI)
+kubectl exec -n airflow <scheduler-pod-name> -- \
+  airflow tasks clear sample_etl_dag -t extract -s 2025-01-01 -y
+```
+
+### 9-8. CeleryExecutor 와 비교
 
 | 항목 | KubernetesExecutor | CeleryExecutor |
 |------|-------------------|---------------|
-| Worker 방식 | 태스크마다 Pod 동적 생성 | 상시 Worker Pod 유지 |
+| Worker 방식 | 태스크마다 Pod 동적 생성·소멸 | 상시 Worker Pod 유지 |
 | 리소스 효율 | 높음 (유휴 Worker 없음) | 낮음 (상시 대기 비용) |
-| 태스크 격리 | 완전 격리 (Pod 단위) | 프로세스 수준 격리 |
-| 실행 지연 | 약간 있음 (Pod 기동 시간) | 낮음 |
-| 적합한 환경 | 배치성·간헐적 워크로드 | 고빈도·저지연 워크로드 |
-| Redis 필요 | ❌ 불필요 | ✅ 필요 |
+| 태스크 격리 | 완전 격리 (Pod 단위, OS/패키지 분리) | 프로세스 수준 격리 |
+| 실행 지연 | 수 초 (Pod 기동 시간) | 수백 ms |
+| 메시지 브로커 | ❌ 불필요 (Kubernetes API 직접 사용) | ✅ Redis / RabbitMQ 필요 |
+| 태스크별 이미지 | ✅ 다른 이미지 사용 가능 | ❌ 동일 Worker 이미지 |
+| 태스크별 리소스 제한 | ✅ Pod spec 으로 세밀 제어 | ❌ Worker 전체 공유 |
+| 적합한 환경 | 배치성·간헐적·이기종 워크로드 | 고빈도·저지연 워크로드 |
+| Kubernetes 의존도 | 강함 (Kubernetes 필수) | 약함 |
+
+### 9-9. 자주 발생하는 문제와 해결
+
+| 증상 | 원인 | 해결 |
+|------|------|------|
+| Worker Pod 가 Pending 으로 멈춤 | 노드 리소스 부족 / 이미지 Pull 실패 | `kubectl describe pod <worker>` 로 Events 확인 |
+| "No module named ..." 오류 | Worker 이미지에 패키지 없음 | 커스텀 이미지 빌드 또는 `_PIP_ADDITIONAL_REQUIREMENTS` 사용 |
+| DB 연결 오류 | MariaDB DNS 해석 실패 | `nslookup mariadb.airflow.svc.cluster.local` 확인 |
+| RBAC 권한 오류 | ServiceAccount 권한 부족 | `kubectl auth can-i create pods --as ...` 확인 |
+| DAG 가 Worker 에 보이지 않음 | git-sync 사이드카 오류 | Worker Pod 의 git-sync 컨테이너 로그 확인 |
+
+```bash
+# KubernetesExecutor 관련 Scheduler 로그만 필터링
+kubectl logs -n airflow \
+  $(kubectl get pods -n airflow -l component=scheduler -o jsonpath='{.items[0].metadata.name}') \
+  | grep -E "KubernetesExecutor|worker_pod|create_pod|pod_id"
+```
 
 ---
 
