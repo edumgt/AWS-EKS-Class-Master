@@ -1,0 +1,152 @@
+# Apache Airflow Helm Chart values
+# Chart: apache-airflow/airflow (https://airflow.apache.org/docs/helm-chart/)
+# 최신 차트 버전 확인: helm search repo apache-airflow/airflow --versions
+#
+# 적용 명령어:
+#   helm upgrade --install airflow apache-airflow/airflow \
+#     --namespace airflow \
+#     --values helm-values/airflow-values.yaml \
+#     --timeout 10m0s
+
+# ──────────────────────────────────────────
+# 실행기: KubernetesExecutor
+# 태스크마다 EKS Pod 를 동적으로 생성·소멸합니다.
+# ──────────────────────────────────────────
+executor: KubernetesExecutor
+
+# ──────────────────────────────────────────
+# 외부 MariaDB 연결 (내장 PostgreSQL 비활성화)
+# ──────────────────────────────────────────
+postgresql:
+  enabled: false
+
+data:
+  metadataConnection:
+    user: airflow
+    pass: "airflow123!"              # 03-mariadb-secret.yaml 의 mariadb-password 와 일치
+    host: mariadb.airflow.svc.cluster.local   # headless svc 통해 mariadb-0 파드에 연결
+    port: 3306
+    db: airflow_meta                 # 03-mariadb-secret.yaml 의 mariadb-database 와 일치
+    protocol: mysql+mysqldb          # Airflow 공식 MariaDB 드라이버
+
+# ──────────────────────────────────────────
+# DAG 동기화: GitSync 사이드카 방식
+# 별도 파일시스템 마운트 없이 git repo 에서 DAG 를 자동 Pull
+# ──────────────────────────────────────────
+dags:
+  gitSync:
+    enabled: true
+    repo: https://github.com/YOUR-ORG/YOUR-DAGS-REPO.git  # 실제 DAG repo 로 교체
+    branch: main
+    rev: HEAD
+    depth: 1
+    maxFailures: 3
+    subPath: "dags"
+    period: 60s                      # 60초마다 git pull
+    # 비공개 repo 인 경우 SSH key secret 이름 지정
+    # sshKeySecret: airflow-git-ssh-secret
+
+# ──────────────────────────────────────────
+# Fernet Key (암호화 키) — 반드시 고유 값으로 생성
+# python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# ──────────────────────────────────────────
+fernetKey: "change-me-generate-with-fernet-Fernet.generate_key"
+
+# ──────────────────────────────────────────
+# Webserver Secret Key
+# python -c "import secrets; print(secrets.token_hex(32))"
+# ──────────────────────────────────────────
+webserverSecretKey: "change-me-generate-random-secret-key-32chars"
+
+# ──────────────────────────────────────────
+# Webserver 설정
+# ──────────────────────────────────────────
+webserver:
+  replicas: 1
+  service:
+    type: ClusterIP          # ALB Ingress 로 노출 (06-airflow-ingress.yaml)
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+  # 기본 관리자 계정 (최초 설치 후 비밀번호 변경 권장)
+  defaultUser:
+    enabled: true
+    role: Admin
+    username: admin
+    email: admin@example.com
+    firstName: Admin
+    lastName: User
+    password: Admin1234!
+
+# ──────────────────────────────────────────
+# Scheduler 설정
+# ──────────────────────────────────────────
+scheduler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+
+# ──────────────────────────────────────────
+# KubernetesExecutor 태스크 Pod 기본 설정
+# ──────────────────────────────────────────
+config:
+  kubernetes:
+    namespace: airflow
+    worker_container_repository: apache/airflow
+    worker_container_tag: "2.9.3"       # Airflow 버전과 동일하게 유지
+    delete_worker_pods: "True"          # 완료된 태스크 Pod 자동 삭제
+    delete_worker_pods_on_failure: "False"  # 실패 Pod 는 로그 확인을 위해 유지
+
+# ──────────────────────────────────────────
+# Triggerer (지연/센서 태스크 비동기 처리)
+# ──────────────────────────────────────────
+triggerer:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+# ──────────────────────────────────────────
+# 내장 Redis / 내장 Worker — KubernetesExecutor 에서는 불필요
+# ──────────────────────────────────────────
+redis:
+  enabled: false
+
+workers:
+  replicas: 0
+
+# ──────────────────────────────────────────
+# Flower UI (CeleryExecutor 용, 여기서는 비활성화)
+# ──────────────────────────────────────────
+flower:
+  enabled: false
+
+# ──────────────────────────────────────────
+# 로그 저장소: EBS PVC (기본 PersistentVolume 사용)
+# ──────────────────────────────────────────
+logs:
+  persistence:
+    enabled: true
+    storageClassName: airflow-ebs-sc
+    size: 10Gi
+
+# ──────────────────────────────────────────
+# 내장 Ingress 비활성화 (06-airflow-ingress.yaml 의 ALB Ingress 사용)
+# ──────────────────────────────────────────
+ingress:
+  web:
+    enabled: false

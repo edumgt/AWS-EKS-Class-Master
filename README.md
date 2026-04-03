@@ -35,6 +35,7 @@
 | 16.  | EKS VPA - 수직 Pod 오토스케일러 |
 | 17.  | EKS CA - 클러스터 오토스케일러 |
 | 18.  | CloudWatch Agent & Fluentd를 사용한 EKS 모니터링 - Container Insights |
+| 20.  | Apache Airflow on EKS - KubernetesExecutor + MariaDB Pod + GitSync |
 
 
 ## 다루는 AWS 서비스
