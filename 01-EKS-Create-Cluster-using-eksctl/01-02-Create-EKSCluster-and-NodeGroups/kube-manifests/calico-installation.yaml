@@ -1,0 +1,32 @@
+# Calico CNI 설치 - Tigera Operator 커스텀 리소스 (Installation CR)
+# 참고: https://docs.tigera.io/calico/latest/getting-started/kubernetes/managed-public-cloud/eks
+#
+# 사용 전 필수 단계:
+#   1. kubectl delete daemonset -n kube-system aws-node
+#   2. kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/tigera-operator.yaml
+#   3. kubectl create -f calico-installation.yaml  (이 파일)
+#
+# EKS 노드 그룹은 Calico 설치 완료 후 생성해야 합니다.
+
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  # EKS 환경에서 Calico를 VPC CNI 대체 CNI로 사용
+  # calicoNetwork.ipPools[].cidr 은 클러스터 Pod CIDR 과 일치해야 합니다.
+  # eksctl 기본값: 192.168.0.0/16
+  cniPlugin: Calico
+  calicoNetwork:
+    bgp: Disabled
+    ipPools:
+      - cidr: 192.168.0.0/16
+        encapsulation: VXLAN
+        natOutgoing: Enabled
+        nodeSelector: all()
+---
+apiVersion: operator.tigera.io/v1
+kind: APIServer
+metadata:
+  name: default
+spec: {}

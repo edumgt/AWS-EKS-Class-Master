@@ -1,0 +1,56 @@
+# EKS 클러스터 설정 - Calico CNI 사용 (eksctl ClusterConfig)
+# 참고: https://docs.tigera.io/calico/latest/getting-started/kubernetes/managed-public-cloud/eks
+#
+# 주의: 이 설정은 VPC CNI(aws-node)를 사용하지 않고 Calico를 기본 CNI 플러그인으로 사용합니다.
+#
+# 생성 순서:
+#   1. eksctl create cluster -f cluster-calico.yaml  (노드그룹 없이 컨트롤플레인만 생성)
+#   2. kubectl delete daemonset -n kube-system aws-node          (VPC CNI 제거)
+#   3. kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/tigera-operator.yaml
+#   4. kubectl create -f kube-manifests/calico-installation.yaml  (Calico CNI 설치)
+#   5. eksctl create nodegroup -f cluster-calico.yaml            (노드 그룹 생성)
+
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: eksdemo-calico
+  region: ap-northeast-2
+  version: "1.31"
+
+availabilityZones:
+  - ap-northeast-2a
+  - ap-northeast-2b
+
+vpc:
+  clusterEndpoints:
+    publicAccess: true
+    privateAccess: false
+
+# Calico CNI 사용 시 VPC CNI 애드온을 설치하지 않음
+# (aws-node DaemonSet 을 수동으로 삭제 후 Calico 설치)
+addons:
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
+
+iam:
+  withOIDC: true
+
+managedNodeGroups:
+  - name: eksdemo-calico-ng-public
+    instanceType: t3.medium
+    minSize: 1
+    maxSize: 3
+    desiredCapacity: 2
+    volumeSize: 20
+    ssh:
+      allow: true
+      publicKeyName: kube-demo
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+        albIngress: true
+        ebs: true
+        externalDNS: true
