@@ -1,5 +1,7 @@
 ## AWS EKS
 
+![alt text](image.png)
+
 > stacksimplify 의 repo 를 응용한 EKS 교육용 repo 입니다.
 
 | 번호 | AWS 서비스 이름 |

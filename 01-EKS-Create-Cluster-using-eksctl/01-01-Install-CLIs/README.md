@@ -48,8 +48,8 @@ aws-cli/2.0.8 Python/3.7.5 Windows/10 botocore/2.0.0dev12
 - 커맨드 라인에서 필요한 정보를 입력
 ```
 aws configure
-AWS Access Key ID [None]: ABCDEFGHIAZBERTUCNGG  (요청 시 본인 자격 증명으로 교체)
-AWS Secret Access Key [None]: uMe7fumK1IdDB094q2sGFhM5Bqt3HQRw3IHZzBDTm  (요청 시 본인 자격 증명으로 교체)
+AWS Access Key ID [None]: xxx
+AWS Secret Access Key [None]: xxx
 Default region name [None]: us-east-1
 Default output format [None]: json
 ```
@@ -223,7 +223,7 @@ aws eks list-clusters --region ap-northeast-2
 클러스터 이름을 `MYCLUSTER`로 바꿔서 실행:
 
 ```bash
-aws eks update-kubeconfig --region ap-northeast-2 --name MYCLUSTER
+aws eks update-kubeconfig --region ap-northeast-2 --name eksdemo2
 kubectl get nodes
 ```
 
