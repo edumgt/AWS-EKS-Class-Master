@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-meeting-summarizer-api
+  namespace: ai-meeting-summarizer
+  labels:
+    app: ai-meeting-summarizer-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-meeting-summarizer-api
+  template:
+    metadata:
+      labels:
+        app: ai-meeting-summarizer-api
+    spec:
+      containers:
+        - name: ai-meeting-summarizer-api
+          image: 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/ai-meeting-summarizer-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
