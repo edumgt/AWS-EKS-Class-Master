@@ -364,6 +364,16 @@ eksctl utils associate-iam-oidc-provider \
 ---
 ```
 # 3) 노드그룹 생성(관리형)
+
+```
+---
+```
+# 4) 확인
+eksctl get cluster --region ap-northeast-2
+eksctl get nodegroup --cluster eksdemo2 --region ap-northeast-2
+kubectl get nodes -o wide
+```
+---
 eksctl create nodegroup \
   --cluster eksdemo2 \
   --region ap-northeast-2 \
@@ -374,12 +384,3 @@ eksctl create nodegroup \
   --nodes-max 2 \
   --node-volume-size 20 \
   --managed
-```
----
-```
-# 4) 확인
-eksctl get cluster --region ap-northeast-2
-eksctl get nodegroup --cluster eksdemo2 --region ap-northeast-2
-kubectl get nodes -o wide
-```
----

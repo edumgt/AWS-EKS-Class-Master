@@ -59,9 +59,9 @@ eksctl create nodegroup --cluster=eksdemo2 \
                         --region=ap-northeast-2 \
                         --name=eksdemo2-ng-public2 \
                         --node-type=t3.medium \
-                        --nodes=1 \
-                        --nodes-min=1 \
-                        --nodes-max=2 \
+                        --nodes=2 \
+                        --nodes-min=2 \
+                        --nodes-max=4 \
                         --node-volume-size=20 \
                         --ssh-access \
                         --ssh-public-key=kube-demo \
@@ -281,104 +281,135 @@ eksctl delete cluster --name=eksdemo-calico --region=ap-northeast-2
 
 ---
 
-## Step-08: Kubernetes Dashboard v3.x 설치 (Helm 방식)
+## Step-08: Headlamp 설치 (Helm 방식)
 
-Kubernetes Dashboard v3.x는 최신 UI와 향상된 보안 모델을 제공합니다. 기존 v2.x와 달리 **Kong Gateway**를 통해 서비스되며 Helm으로 설치합니다.
+기존 `kubernetes/dashboard` 프로젝트는 더 이상 새 설치 대상으로 권장되지 않으므로, 여기서는 현재 유지 관리되는 `Headlamp`를 Helm으로 설치합니다. Headlamp는 Kubernetes 리소스를 웹 UI로 확인하고, 로그 조회와 YAML 편집 같은 관리 작업을 수행할 수 있습니다.
 
-### Step-08-01: Helm으로 kubernetes-dashboard 설치
+### Step-08-01: Helm으로 Headlamp 설치
 ```bash
-# kubernetes-dashboard Helm 레포지토리 추가
-helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+# Headlamp Helm 레포지토리 추가
+helm repo add headlamp https://kubernetes-sigs.github.io/headlamp/
 helm repo update
 
-# Dashboard 설치 (v3.x 최신 버전)
-helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard \
+# Headlamp 설치 (기본 Service 타입: ClusterIP)
+helm upgrade --install headlamp headlamp/headlamp \
   --create-namespace \
-  --namespace kubernetes-dashboard
+  --namespace headlamp
 
 # 설치 확인
-kubectl -n kubernetes-dashboard get pods
-kubectl -n kubernetes-dashboard get svc
+kubectl -n headlamp get pods
+kubectl -n headlamp get svc
 ```
 
 ### Step-08-02: 관리자 ServiceAccount 생성
 ```bash
 # 관리자 ServiceAccount 및 ClusterRoleBinding 적용
-kubectl apply -f kube-manifests/dashboard-admin-user.yaml
+kubectl apply -f kube-manifests/headlamp-admin-user.yaml
 ```
 
 ### Step-08-03: Bearer 토큰 발급
 ```bash
-# 임시 토큰 발급 (유효기간: 기본 1시간)
-kubectl -n kubernetes-dashboard create token admin-user
-
-# 장기 토큰이 필요한 경우 Secret 생성 (학습/개발 환경 전용)
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: admin-user-token
-  namespace: kubernetes-dashboard
-  annotations:
-    kubernetes.io/service-account.name: admin-user
-type: kubernetes.io/service-account-token
-EOF
-
-kubectl -n kubernetes-dashboard get secret admin-user-token -o jsonpath='{.data.token}' | base64 -d
+# 로그인에 사용할 토큰 발급
+kubectl -n headlamp create token headlamp-admin
 ```
 
-### Step-08-04: 로컬에서 Dashboard 접속 (포트 포워딩)
+### Step-08-04: 로컬에서 Headlamp 접속 (포트 포워딩)
 ```bash
-# Kong 프록시 포트 포워딩 (v3.x에서는 kong-proxy 서비스 사용)
-kubectl -n kubernetes-dashboard port-forward svc/kubernetes-dashboard-kong-proxy 8443:443
+# Headlamp 서비스 포트 포워딩
+kubectl -n headlamp port-forward svc/headlamp 8080:80
 
-# 브라우저에서 접속 (자체 서명 인증서이므로 브라우저 경고 무시)
-# https://localhost:8443
+# 브라우저에서 접속
+# http://localhost:8080
+# 기본 영문으로 접속
+# http://localhost:8080/?lng=en
 ```
 
-> **중요:** 발급된 Bearer 토큰을 Dashboard 로그인 화면에 입력하면 접속됩니다.
+> **중요:** 발급된 Bearer 토큰을 Headlamp 로그인 화면에 입력하면 접속됩니다.
+> Headlamp는 브라우저 언어를 감지해 UI 언어를 선택하므로, 영어로 고정해서 보려면 URL에 `?lng=en`을 붙여 접속합니다.
 
-### Step-08-05: Dashboard 주요 기능 (v3.x)
+### Step-08-05: ClusterIP 조회 및 내부 접속 확인
+```bash
+# Service 상세 확인
+kubectl -n headlamp get svc headlamp
+
+# ClusterIP만 조회
+kubectl -n headlamp get svc headlamp -o jsonpath='{.spec.clusterIP}'
+echo
+
+# Service 전체 YAML 확인
+kubectl -n headlamp get svc headlamp -o yaml
+```
+
+> `ClusterIP`는 클러스터 내부 전용 주소입니다. 일반적으로 브라우저에서 직접 접속하지 않고, Pod 간 통신이나 `port-forward` 확인용으로 사용합니다.
+
+### Step-08-06: NodePort 방식으로 외부 접속 구현
+```bash
+# Headlamp 서비스를 NodePort로 변경
+helm upgrade headlamp headlamp/headlamp \
+  --namespace headlamp \
+  --set service.type=NodePort \
+  --set service.nodePort=30080
+
+# NodePort 서비스 확인
+kubectl -n headlamp get svc headlamp
+
+# NodePort 번호만 조회
+kubectl -n headlamp get svc headlamp -o jsonpath='{.spec.ports[0].nodePort}'
+echo
+
+# 노드 IP 확인
+kubectl get nodes -o wide
+
+# ExternalIP만 조회
+kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{range .status.addresses[*]}{.type}={.address}{" "}{end}{"\n"}{end}'
+```
+
+접속 예시:
+```text
+http://<EC2-Public-IP>:30080
+http://<EC2-Public-IP>:30080/?lng=en
+```
+
+> 퍼블릭 서브넷의 EKS 노드에 공인 IP가 있고, 노드 보안 그룹에서 TCP `30080` 인바운드를 허용해야 외부 브라우저에서 접속할 수 있습니다.
+
+### Step-08-07: NodePort를 다시 ClusterIP로 되돌리기
+```bash
+helm upgrade headlamp headlamp/headlamp \
+  --namespace headlamp \
+  --set service.type=ClusterIP \
+  --set service.nodePort=null
+```
+
+### Step-08-08: Headlamp 주요 기능
 
 | 기능 | 설명 |
 |------|------|
-| 워크로드 개요 | Deployment, Pod, ReplicaSet, StatefulSet 시각화 |
-| 실시간 로그 | 컨테이너 로그 스트리밍 뷰어 |
+| 워크로드 개요 | Deployment, Pod, DaemonSet, StatefulSet 시각화 |
+| 실시간 로그 | 컨테이너 로그 조회 |
 | 리소스 편집 | YAML 직접 편집 및 적용 |
-| 네임스페이스 전환 | 멀티 네임스페이스 지원 |
-| 메트릭 표시 | metrics-server 연동 시 CPU/메모리 그래프 표시 |
-| 다크 모드 | 밝은/어두운 테마 선택 지원 |
+| 네임스페이스 전환 | 멀티 네임스페이스 탐색 |
+| 플러그인 확장 | 필요 시 플러그인 기반 기능 확장 |
+| 메트릭 표시 | metrics-server 연동 시 CPU/메모리 정보 표시 |
 
-### Step-08-06: Dashboard 버전 확인 및 업그레이드
+### Step-08-09: Headlamp 버전 확인 및 업그레이드
 ```bash
-# 현재 설치된 차트 버전 확인
-helm list -n kubernetes-dashboard
+# 현재 설치된 차트 확인
+helm list -n headlamp
 
 # 최신 버전으로 업그레이드
 helm repo update
-helm upgrade kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard \
-  --namespace kubernetes-dashboard
+helm upgrade headlamp headlamp/headlamp \
+  --namespace headlamp
 ```
 
-### Step-08-07: 정리
+### Step-08-10: 정리
 ```bash
-# Dashboard 삭제
-helm uninstall kubernetes-dashboard --namespace kubernetes-dashboard
-kubectl delete namespace kubernetes-dashboard
-kubectl delete clusterrolebinding admin-user
+# Headlamp 삭제
+helm uninstall headlamp --namespace headlamp
+kubectl delete namespace headlamp
+kubectl delete clusterrolebinding headlamp-admin
 ```
 
-### Kubernetes Dashboard 버전 비교
-
-| 항목 | v2.x (구버전) | v3.x (최신) |
-|------|--------------|------------|
-| 설치 방식 | kubectl apply -f (단일 YAML) | Helm Chart |
-| 게이트웨이 | 내장 HTTP 서버 | Kong Gateway |
-| 인증 | 토큰/kubeconfig, skip 옵션 있음 | 토큰/kubeconfig (skip 옵션 제거됨) |
-| UI 프레임워크 | Angular | Angular (리팩터링) |
-| 메트릭 연동 | metrics-server 연동 | metrics-server 연동 |
-| 최소 쿠버네티스 버전 | 1.19+ | 1.25+ |
-
-- **공식 문서:** https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/
-- **Helm Chart:** https://artifacthub.io/packages/helm/k8s-dashboard/kubernetes-dashboard
-- **GitHub:** https://github.com/kubernetes/dashboard
+- **공식 문서:** https://headlamp.dev/
+- **Helm Chart:** https://artifacthub.io/packages/helm/headlamp/headlamp
+- **GitHub:** https://github.com/kubernetes-sigs/headlamp
