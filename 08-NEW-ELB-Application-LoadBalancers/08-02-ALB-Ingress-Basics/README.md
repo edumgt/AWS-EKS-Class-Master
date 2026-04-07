@@ -260,3 +260,4 @@ kubectl get ingress
 AWS 관리 콘솔 -> Services -> EC2 -> Load Balancers로 이동
 ```
 
+![alt text](image.png)
