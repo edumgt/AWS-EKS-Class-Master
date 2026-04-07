@@ -301,7 +301,7 @@ kubectl get sa aws-load-balancer-controller -n kube-system
 # 템플릿
 #Note:  K8S Service Account Name that need to be bound to newly created IAM Role
 eksctl create iamserviceaccount \
-  --cluster eksdemo2 \
+  --cluster eksdemo1 \
   --namespace kube-system \
   --name aws-load-balancer-controller \
   --attach-policy-arn arn:aws:iam::086015456585:policy/AWSLoadBalancerControllerIAMPolicy \
@@ -315,7 +315,7 @@ eksctl create iamserviceaccount \
 아래 명령을 그대로 실행하세요. (region은 이미 안내된 ap-northeast-2)
 eksctl utils associate-iam-oidc-provider \
   --region ap-northeast-2 \
-  --cluster eksdemo2 \
+  --cluster eksdemo1 \
   --approve
 
 ```
@@ -323,7 +323,7 @@ eksctl utils associate-iam-oidc-provider \
 
 # name, cluster, policy arn을 실제 값으로 교체(단계-02에서 기록한 Policy ARN 사용)
 eksctl create iamserviceaccount \
-  --cluster eksdemo2 \
+  --cluster eksdemo1 \
   --namespace kube-system \
   --name aws-load-balancer-controller \
   --attach-policy-arn arn:aws:iam::086015456585:policy/AWSLoadBalancerControllerIAMPolicy \
@@ -360,13 +360,13 @@ Kalyans-MacBook-Pro:08-01-Load-Balancer-Controller-Install kdaida$
 ### 단계-03-02: eksctl CLI로 확인
 ```t
 # IAM Service Account 조회
-eksctl  get iamserviceaccount --cluster eksdemo2
+eksctl  get iamserviceaccount --cluster eksdemo1
 ```
 ---
 ```
-ubuntu@DESKTOP-8FSFFJK:~/Eks-Class/08-NEW-ELB-Application-LoadBalancers/08-01-Load-Balancer-Controller-Install$ eksctl  get iamserviceaccount --cluster eksdemo2
+ubuntu@DESKTOP-8FSFFJK:~/Eks-Class/08-NEW-ELB-Application-LoadBalancers/08-01-Load-Balancer-Controller-Install$ eksctl  get iamserviceaccount --cluster eksdemo1
 NAMESPACE       NAME                            ROLE ARN
-kube-system     aws-load-balancer-controller    arn:aws:iam::086015456585:role/eksctl-eksdemo2-addon-iamserviceaccount-kube--Role1-SzVF2cHG1MuR
+kube-system     aws-load-balancer-controller    arn:aws:iam::086015456585:role/eksctl-eksdemo1-addon-iamserviceaccount-kube--Role1-SzVF2cHG1MuR
 ```
 ---
 ```
@@ -463,16 +463,6 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set serviceAccount.name=aws-load-balancer-controller \
   --set region=ap-northeast-2 \
   --set vpcId=vpc-052b0119f527ad248 \
-  --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
-
-## 클러스터 이름, 리전 코드, VPC ID, 이미지 리포지토리 계정/리전 코드를 실제 값으로 교체
-helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
-  -n kube-system \
-  --set clusterName=eksdemo2 \
-  --set serviceAccount.create=false \
-  --set serviceAccount.name=aws-load-balancer-controller \
-  --set region=ap-northeast-2 \
-  --set vpcId=vpc-0111cf517c23abb9c \
   --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
 ```
 - **AWS Load Balancer Controller 설치 단계 출력 예시**
