@@ -1,22 +1,49 @@
 # AWS - 클래식 로드 밸런서 - CLB
 
 ## 단계-01: AWS 클래식 로드 밸런서 Kubernetes 매니페스트 생성 및 배포
-- **08-ClassicLoadBalancer.yml**
+- 이 폴더 예제는 `kubeapp-ecr` Deployment를 먼저 배포하고, 그 앞단에 `type: LoadBalancer` Service를 붙여 AWS Classic Load Balancer를 생성하는 흐름이다.
+
+- **01-ECR-Nginx-Deployment.yml**
+```yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeapp-ecr
+  labels:
+    app: kubeapp-ecr
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kubeapp-ecr
+  template:
+    metadata:
+      labels:
+        app: kubeapp-ecr
+    spec:
+      containers:
+        - name: kubeapp-ecr
+          image: 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:latest
+          ports:
+            - containerPort: 80
+```
+
+- **02-ECR-Nginx-ClassicLB-Service.yml**
 ```yml
 apiVersion: v1
 kind: Service
 metadata:
-  name: clb-usermgmt-restapp
-  namespace: dev3
+  name: kubeapp-ecr-clb
   labels:
-    app: usermgmt-restapp
+    app: kubeapp-ecr
 spec:
-  type: LoadBalancer  # 일반적인 k8s Service 매니페스트에서 type을 LoadBalancer로 설정
+  type: LoadBalancer
   selector:
-    app: usermgmt-restapp     
+    app: kubeapp-ecr
   ports:
-  - port: 80
-    targetPort: 8095
+    - port: 80
+      targetPort: 80
+      protocol: TCP
 ```
 ---
 ```
@@ -60,15 +87,15 @@ NodeIP:NodePort 로 외부에서 접근 가능
 # 모든 매니페스트 배포
 kubectl apply -f kube-manifests/
 
-# dev3 네임스페이스 기준 서비스 목록 조회 (새로 생성된 CLB 서비스 확인)
-kubectl get svc -n dev3
+# 서비스 목록 조회 (새로 생성된 CLB 서비스 확인)
+kubectl get svc
 
 # 파드 확인
-kubectl get pods -n dev3
+kubectl get pods
 
 # CLB 서비스 상세 확인
-kubectl get svc -n dev3 clb-usermgmt-restapp -o wide
-kubectl describe svc -n dev3 clb-usermgmt-restapp
+kubectl get svc kubeapp-ecr-clb -o wide
+kubectl describe svc kubeapp-ecr-clb
 ```
 ---
 # kubectl apply 결과가 eksdemo1 / eksdemo2 중 어디에 적용됐는지 확인하기
@@ -123,10 +150,8 @@ kubectl get secret  --context eksdemo2
 
 방금 생성된 리소스 목록(예시):
 
-- `service/mysql`
-- `deployment.apps/usermgmt-microservice`
-- `secret/mysql-db-password`
-- `service/clb-usermgmt-restapp`
+- `deployment.apps/kubeapp-ecr`
+- `service/kubeapp-ecr-clb`
 
 ➡️ 위 리소스가 **보이는 쪽 클러스터가 설치(적용)된 클러스터**다.
 
@@ -162,12 +187,10 @@ aws eks update-kubeconfig --region ap-northeast-2 --name eksdemo2
   - Services -> EC2 -> Load Balancing -> Load Balancers 로 이동
     - CLB가 생성되어 있어야 함
     - DNS 이름 복사 (예: a85ae6e4030aa4513bd200f08f1eb9cc-7f13b3acc1bcaaa2.elb.us-east-1.amazonaws.com)
-  - Services -> EC2 -> Load Balancing -> Target Groups 로 이동
-    - 헬스 상태를 확인하고 active 상태인지 확인
 - **애플리케이션 접속**
 ```
 # 애플리케이션 접속
-http://<CLB-DNS-NAME>/usermgmt/health-status
+http://<CLB-DNS-NAME>/
 ```    
 
 ## 단계-03: 정리
@@ -176,5 +199,49 @@ http://<CLB-DNS-NAME>/usermgmt/health-status
 kubectl delete -f kube-manifests/
 
 # 현재 Kubernetes 오브젝트 확인
-kubectl get all -n dev3
+kubectl get all
+```
+
+---
+
+```
+root@DESKTOP-O3O4N28:/home/AWS-EKS-Class-Master/07-ELB-Classic-and-Network-LoadBalancers/07-02-Classic-LoadBalancer-CLB# curl -i http://def.edumgt.co.kr
+HTTP/1.1 200 OK
+Server: nginx/1.29.7
+Date: Tue, 07 Apr 2026 06:22:28 GMT
+Content-Type: text/html
+Content-Length: 189
+Last-Modified: Mon, 06 Apr 2026 05:13:50 GMT
+Connection: keep-alive
+ETag: "69d3410e-bd"
+Accept-Ranges: bytes
+
+<!DOCTYPE html>
+<html>
+<body style="background-color:rgb(217, 250, 210);">
+
+<h1>Welcome to Stack Simplify</h1>
+<h3>AWS EKS Master Class - Integration with ECR Registry</h3>
+
+</body>
+root@DESKTOP-O3O4N28:/home/AWS-EKS-Class-Master/07-ELB-Classic-and-Network-LoadBalancers/07-02-Classic-LoadBalancer-CLB# curl -i http://a11b6db
+91931e438baa7af150971c312-1423274226.ap-northeast-2.elb.amazonaws.com
+HTTP/1.1 200 OK
+Server: nginx/1.29.7
+Date: Tue, 07 Apr 2026 06:27:47 GMT
+Content-Type: text/html
+Content-Length: 189
+Last-Modified: Mon, 06 Apr 2026 05:13:50 GMT
+Connection: keep-alive
+ETag: "69d3410e-bd"
+Accept-Ranges: bytes
+
+<!DOCTYPE html>
+<html>
+<body style="background-color:rgb(217, 250, 210);">
+
+<h1>Welcome to Stack Simplify</h1>
+<h3>AWS EKS Master Class - Integration with ECR Registry</h3>
+
+</body>
 ```

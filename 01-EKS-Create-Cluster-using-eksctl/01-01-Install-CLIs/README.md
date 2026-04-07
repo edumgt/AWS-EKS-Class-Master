@@ -226,31 +226,11 @@ aws eks list-clusters --region ap-northeast-2
 aws eks update-kubeconfig --region ap-northeast-2 --name eksdemo2
 kubectl get nodes
 ```
-
 ---
-
-# 자주 막히는 포인트 3개 (빠른 체크)
-
-## A) PATH 문제
-
-```bash
-which kubectl && which eksctl && echo $PATH
-```
-
-- 둘 다 `/usr/local/bin/...` 로 나오면 정상입니다.
-
-## B) 권한(AccessDenied) 문제
-
-`aws sts get-caller-identity`는 되는데 EKS 조회가 안 되면, IAM 정책에 아래 액션들이 없을 수 있습니다:
-
-- `eks:DescribeCluster`
-- `eks:ListClusters`
-
-## C) “kubeconfig는 됐는데 kubectl이 접근 못함”
 
 ```bash
 kubectl config current-context
-kubectl cluster-info
+kubectl cluster-info dump
 ```
 
 ---
