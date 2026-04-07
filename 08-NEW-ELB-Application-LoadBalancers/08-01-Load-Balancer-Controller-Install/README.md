@@ -465,17 +465,10 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set vpcId=vpc-052b0119f527ad248 \
   --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
 ```
-- **AWS Load Balancer Controller 설치 단계 출력 예시**
-```t
-## AWS Load Balancer Controller 설치 단계 출력 예시
-Kalyans-MacBook-Pro:08-01-Load-Balancer-Controller-Install kdaida$ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
->   -n kube-system \
->   --set clusterName=eksdemo1 \
->   --set serviceAccount.create=false \
->   --set serviceAccount.name=aws-load-balancer-controller \
->   --set region=us-east-1 \
->   --set vpcId=vpc-0570fda59c5aaf192 \
->   --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
+---
+### 결과 화면 예시
+
+```
 NAME: aws-load-balancer-controller
 LAST DEPLOYED: Wed Feb  2 10:33:57 2022
 NAMESPACE: kube-system
@@ -484,7 +477,6 @@ REVISION: 1
 TEST SUITE: None
 NOTES:
 AWS Load Balancer controller installed!
-Kalyans-MacBook-Pro:08-01-Load-Balancer-Controller-Install kdaida$ 
 ```
 ### 단계-04-03: 컨트롤러 설치 및 Webhook Service 생성 확인
 ```t
@@ -494,21 +486,14 @@ kubectl -n kube-system get deployment aws-load-balancer-controller
 kubectl -n kube-system describe deployment aws-load-balancer-controller
 
 # 출력 예시
-Kalyans-MacBook-Pro:08-01-Load-Balancer-Controller-Install kdaida$ kubectl get deployment -n kube-system aws-load-balancer-controller
+$ kubectl get deployment -n kube-system aws-load-balancer-controller
 NAME                           READY   UP-TO-DATE   AVAILABLE   AGE
 aws-load-balancer-controller   2/2     2            2           27s
-Kalyans-MacBook-Pro:08-01-Load-Balancer-Controller-Install kdaida$ 
 
 # AWS Load Balancer Controller Webhook Service 생성 확인
 kubectl -n kube-system get svc 
 kubectl -n kube-system get svc aws-load-balancer-webhook-service
 kubectl -n kube-system describe svc aws-load-balancer-webhook-service
-
-# 출력 예시
-Kalyans-MacBook-Pro:aws-eks-kubernetes-masterclass-internal kdaida$ kubectl -n kube-system get svc aws-load-balancer-webhook-service
-NAME                                TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
-aws-load-balancer-webhook-service   ClusterIP   10.100.53.52   <none>        443/TCP   61m
-Kalyans-MacBook-Pro:aws-eks-kubernetes-masterclass-internal kdaida$ 
 
 # Service/Deployment의 라벨 및 셀렉터 라벨 확인
 kubectl -n kube-system get svc aws-load-balancer-webhook-service -o yaml
@@ -535,13 +520,15 @@ kubectl -n kube-system logs -f aws-load-balancer-controller-86b598cbd6-vqqsk
 
 ### 단계-04-05: AWS Load Balancer Controller K8s Service Account 내부 확인
 
-```
-https://jwt.io/
-관찰 사항: 디코딩된 JWT 토큰 확인
+## https://jwt.io/ 관찰 사항: 디코딩된 JWT 토큰 확인
 
+![alt text](image-1.png)
+
+```
 kubectl -n kube-system create token aws-load-balancer-controller --duration=10m
 ```
-![alt text](image-1.png)
+
+
 
 # YAML 형식으로 Deployment 확인
 kubectl -n kube-system get deploy aws-load-balancer-controller -o yaml

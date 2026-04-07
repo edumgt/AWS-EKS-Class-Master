@@ -82,7 +82,7 @@ metadata:
     alb.ingress.kubernetes.io/healthy-threshold-count: '2'
     alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
 spec:
-  ingressClassName: ic-external-lb # Ingress Class
+  ingressClassName: alb # Ingress Class
   defaultBackend:
     service:
       name: app1-nginx-nodeport-service
@@ -181,7 +181,7 @@ metadata:
     alb.ingress.kubernetes.io/healthy-threshold-count: '2'
     alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
 spec:
-  ingressClassName: ic-external-lb # Ingress Class
+  ingressClassName: alb # Ingress Class
   rules:
     - http:
         paths:
@@ -194,7 +194,7 @@ spec:
                   number: 80
       
 
-# 1. "spec.ingressClassName: ic-external-lb"가 지정되지 않으면 이 쿠버네티스 클러스터의 기본 ingress class를 참조합니다.
+# 1. "spec.ingressClassName: alb"가 지정되지 않으면 이 쿠버네티스 클러스터의 기본 ingress class를 참조합니다.
 # 2. 기본 Ingress class는 `ingressclass.kubernetes.io/is-default-class: "true"` 애노테이션이 있는 ingress class입니다.
 ```
 
@@ -259,5 +259,4 @@ kubectl get ingress
 # Application Load Balancer 삭제 확인
 AWS 관리 콘솔 -> Services -> EC2 -> Load Balancers로 이동
 ```
-
 

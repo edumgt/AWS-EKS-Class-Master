@@ -22,7 +22,7 @@ metadata:
     alb.ingress.kubernetes.io/healthy-threshold-count: '2'
     alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
 spec:
-  ingressClassName: my-aws-ingress-class # Ingress Class
+  ingressClassName: alb # Ingress Class
   rules:
   - http:
       paths:
@@ -34,5 +34,5 @@ spec:
             port:
               number: 80  
       
-# 1. If  "spec.ingressClassName: my-aws-ingress-class" not specified, will reference default ingress class on this kubernetes cluster
+# 1. If  "spec.ingressClassName: alb" not specified, will reference default ingress class on this kubernetes cluster
 # 2. Default Ingress class is nothing but for which ingress class we have the annotation `ingressclass.kubernetes.io/is-default-class: "true"`
