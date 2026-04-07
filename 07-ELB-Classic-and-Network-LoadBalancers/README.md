@@ -5,6 +5,4 @@
 2. 네트워크 로드 밸런서
 3. 애플리케이션 로드 밸런서 (k8s Ingress)
 
----
 
-http://13.125.183.105:30784/usermgmt/health-status
