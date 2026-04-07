@@ -112,7 +112,7 @@ http://<EKS-WorkerNode-Public-IP>:31231/usermgmt/health-status
 ## Step-05: MySQL 데이터베이스에서 사용자 확인
 ```
 # MySQL 데이터베이스 연결
-kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h mysql -u root -pdbpassword11
+kubectl run -it --rm --image=mysql:8.0 --restart=Never mysql-client -- mysql -h mysql -u root -pdbpassword11
 
 # ConfigMap에 제공한 usermgmt 스키마가 생성되었는지 확인
 mysql> show schemas;
@@ -133,5 +133,4 @@ kubectl get pods
 # sc, pvc, pv 확인
 kubectl get sc,pvc,pv
 ```
-
 

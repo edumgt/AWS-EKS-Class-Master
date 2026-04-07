@@ -379,8 +379,8 @@ eksctl create nodegroup \
   --region ap-northeast-2 \
   --name eksdemo2-ng-public1 \
   --node-type t3.medium \
-  --nodes 1 \
-  --nodes-min 1 \
-  --nodes-max 2 \
+  --nodes 2 \
+  --nodes-min 2 \
+  --nodes-max 4 \
   --node-volume-size 20 \
   --managed

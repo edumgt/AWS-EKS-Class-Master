@@ -8,6 +8,9 @@
 - 워커 노드 IAM 역할에 IAM 정책 연결
 - EBS CSI 드라이버 설치
 
+```
+kubectl apply --validate=false -f /home/AWS-EKS-Class-Master/04-EKS-Storage-with-EBS-ElasticBlockStore/04-01-Install-EBS-CSI-Driver/ebs.yaml
+```
 ---
 # EKS에서 EBS란?
 
@@ -406,5 +409,69 @@ metrics-server-6d994b8776-6gdx6       1/1     Running   0          13h
 metrics-server-6d994b8776-7nzkr       1/1     Running   0          13h
 ```
 
+---
+```
+권장 방식이면 ebs.yaml 수동 설치 대신 aws-ebs-csi-driver를 EKS Add-on으로 설치하고, 권한은 노드 Role이 아니라 전용 IAM Role에 주는 게 맞습니다. 현재 AWS 공식 문서 기준으로는 EKS Pod Identity가 권장이고, IRSA도 계속 지원됩니다.
+출처: AWS EKS 공식 문서 IAM roles for add-ons, AWS add-ons / EBS CSI, Create an add-on
 
+지금 클러스터가 eksdemo2이고, 이미 ebs.yaml로 self-managed 드라이버를 올려둔 상태라면 먼저 그걸 지우고 add-on으로 바꾸는 흐름이 가장 깔끔합니다.
+
+IRSA 방식
+OIDC provider가 필요합니다.
+
+CLUSTER_NAME="eksdemo2"
+REGION="ap-northeast-2"
+ROLE_NAME="AmazonEKS_EBS_CSI_DriverRole"
+ACCOUNT_ID="086015456585"
+
+eksctl utils associate-iam-oidc-provider \
+  --cluster "$CLUSTER_NAME" \
+  --region "$REGION" \
+  --approve
+
+eksctl create iamserviceaccount \
+  --name ebs-csi-controller-sa \
+  --namespace kube-system \
+  --cluster "$CLUSTER_NAME" \
+  --region "$REGION" \
+  --role-name "$ROLE_NAME" \
+  --role-only \
+  --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+  --approve
+그 다음 self-managed 제거 후 add-on 설치:
+
+kubectl delete -f /home/AWS-EKS-Class-Master/04-EKS-Storage-with-EBS-ElasticBlockStore/04-01-Install-EBS-CSI-Driver/ebs.yaml
+
+aws eks create-addon \
+  --cluster-name "$CLUSTER_NAME" \
+  --region "$REGION" \
+  --addon-name aws-ebs-csi-driver \
+  --service-account-role-arn arn:aws:iam::"$ACCOUNT_ID":role/"$ROLE_NAME"
+Pod Identity 방식
+AWS 공식상 더 권장되는 방식입니다. 이 경우 EKS Pod Identity Agent가 필요합니다.
+
+EBS CSI용 IAM Role 생성 후 AmazonEBSCSIDriverPolicy 연결
+aws eks create-addon 할 때 --pod-identity-associations 사용
+예시는 공식 문서 흐름상 아래 형태입니다.
+
+aws eks create-addon \
+  --cluster-name eksdemo2 \
+  --region ap-northeast-2 \
+  --addon-name aws-ebs-csi-driver \
+  --pod-identity-associations 'serviceAccount=ebs-csi-controller-sa,roleArn=arn:aws:iam::086015456585:role/AmazonEKS_EBS_CSI_DriverRole'
+설치 확인:
+
+aws eks describe-addon \
+  --cluster-name eksdemo2 \
+  --region ap-northeast-2 \
+  --addon-name aws-ebs-csi-driver
+
+kubectl get pods -n kube-system | grep ebs-csi
+실무적으로는 이렇게 보시면 됩니다.
+
+가장 무난함: EKS Add-on + IRSA
+현재 AWS 권장: EKS Add-on + Pod Identity
+비권장에 가까움: ebs.yaml + node IAM role
+원하시면 다음 답변에서 eksdemo2 기준으로 바로 복붙 가능한 “삭제부터 add-on 설치까지” 명령만 한 블록으로 정리해드릴게요.
+```
 

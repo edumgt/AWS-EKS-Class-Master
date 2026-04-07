@@ -70,12 +70,12 @@ kubectl get pods -l app=mysql
 ## Step-04: MySQL 데이터베이스 연결
 ```
 # MySQL 데이터베이스 연결
-kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h mysql -pdbpassword11
+kubectl run -it --rm --image=mysql:8.0 --restart=Never mysql-client -- mysql -h mysql -pdbpassword11
 
 [or]
 
 # 최신 mysql 클라이언트 태그 사용
-kubectl run -it --rm --image=mysql:latest --restart=Never mysql-client -- mysql -h mysql -pdbpassword11
+kubectl run -it --rm --image=mysql:8.0 --restart=Never mysql-client -- mysql -h mysql -pdbpassword11
 
 # ConfigMap에 설정한 usermgmt 스키마가 생성되었는지 확인
 mysql> show schemas;
@@ -89,5 +89,4 @@ mysql> show schemas;
 - **EBS CSI Driver 동적 프로비저닝:**  https://github.com/kubernetes-sigs/aws-ebs-csi-driver/tree/master/examples/kubernetes/dynamic-provisioning
 - **EBS CSI Driver - Resizing, Snapshot 등 다른 예시:** https://github.com/kubernetes-sigs/aws-ebs-csi-driver/tree/master/examples/kubernetes
 - **k8s API 참고 문서:** https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#storageclass-v1-storage-k8s-io
-
 
