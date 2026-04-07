@@ -462,7 +462,7 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
   --set region=ap-northeast-2 \
-  --set vpcId=vpc-0197daa87ab3234f3 \
+  --set vpcId=vpc-052b0119f527ad248 \
   --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
 
 ## 클러스터 이름, 리전 코드, VPC ID, 이미지 리포지토리 계정/리전 코드를 실제 값으로 교체
