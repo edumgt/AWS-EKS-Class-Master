@@ -1,7 +1,65 @@
-/ADDITIONAL-TOPICS
-/FUTURE-TOPCS
+# Project-specific directories
+/ADDITIONAL-TOPICS/
+/FUTURE-TOPCS/
 
-kubectl
+# CLI binaries and local tooling
+/kubectl
 
+# Secrets and local environment files
 *.pem
 *.key
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Editor and IDE settings
+.idea/
+.vscode/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+.venv/
+venv/
+env/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage/
+dist/
+.next/
+
+# Java and JVM builds
+target/
+build/
+out/
+*.class
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
