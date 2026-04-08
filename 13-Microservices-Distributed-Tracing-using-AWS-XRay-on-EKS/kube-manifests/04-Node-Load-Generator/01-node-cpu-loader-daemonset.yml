@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-cpu-loader
+  namespace: default
+  labels:
+    app: node-cpu-loader
+spec:
+  selector:
+    matchLabels:
+      app: node-cpu-loader
+  template:
+    metadata:
+      labels:
+        app: node-cpu-loader
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: cpu-loader
+          image: public.ecr.aws/docker/library/alpine:3.20
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              echo "Starting CPU load on $(hostname)"
+              while :; do :; done &
+              while :; do :; done &
+              wait
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "64Mi"
+            limits:
+              cpu: "1000m"
+              memory: "128Mi"

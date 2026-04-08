@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xray-node-analysis-demo
+  namespace: default
+  labels:
+    app: xray-node-analysis-demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: xray-node-analysis-demo
+  template:
+    metadata:
+      labels:
+        app: xray-node-analysis-demo
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: xray-node-analysis-demo
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: node-analysis-demo
+          image: 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/xray-node-analysis-demo:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_NAME
+              value: "xray-node-analysis-demo"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: AWS_XRAY_TRACING_NAME
+              value: "xray-node-analysis-demo"
+            - name: AWS_XRAY_DAEMON_ADDRESS
+              value: "$(HOST_IP):2000"
+            - name: AWS_XRAY_CONTEXT_MISSING
+              value: "LOG_ERROR"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20

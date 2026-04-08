@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>X-Ray Node Analysis Demo</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+        background: linear-gradient(135deg, #eff6ff, #fff7ed);
+        color: #0f172a;
+      }
+      .wrap {
+        max-width: 820px;
+        margin: 48px auto;
+        padding: 24px;
+      }
+      .card {
+        background: white;
+        border: 1px solid #dbeafe;
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+      }
+      button {
+        background: #2563eb;
+        color: white;
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 18px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      pre {
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 18px;
+        border-radius: 14px;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>X-Ray Node Analysis Demo</h1>
+        <p>
+          This demo sends a trace to the X-Ray daemon running on the same Kubernetes node and returns
+          node and pod metadata so you can compare traces per node.
+        </p>
+        <button id="run-analysis">Run node analysis</button>
+        <h2>Latest response</h2>
+        <pre id="output">Click the button to generate an X-Ray segment.</pre>
+      </div>
+    </div>
+    <script>
+      const output = document.getElementById("output");
+      document.getElementById("run-analysis").addEventListener("click", async () => {
+        output.textContent = "Loading...";
+        const response = await fetch("/analyze");
+        const data = await response.json();
+        output.textContent = JSON.stringify(data, null, 2);
+      });
+    </script>
+  </body>
+</html>
