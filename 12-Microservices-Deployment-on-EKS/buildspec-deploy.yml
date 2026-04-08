@@ -57,7 +57,9 @@ phases:
         if [ -f "$EXTRA_MANIFEST_FILE" ]; then
           kubectl create namespace notifications --dry-run=client -o yaml | kubectl apply -f -
           echo "Applying additional manifest $EXTRA_MANIFEST_FILE..."
-          kubectl apply -f "$EXTRA_MANIFEST_FILE"
+          if ! kubectl apply -f "$EXTRA_MANIFEST_FILE"; then
+            echo "Optional manifest $EXTRA_MANIFEST_FILE failed, continuing without it."
+          fi
         else
           echo "No extra manifest file found, skipping."
         fi
