@@ -19,7 +19,7 @@ metadata:
     alb.ingress.kubernetes.io/healthy-threshold-count: '2'
     alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'   
 spec:
-  ingressClassName: my-aws-ingress-class   # Ingress Class                       
+  ingressClassName: alb   # Ingress Class                       
   rules:
     - http:
         paths:           
@@ -46,9 +46,4 @@ spec:
                   number: 80                     
              
 
-# Important Note-1: In path based routing order is very important, if we are going to use  "/*" (Root Context), try to use it at the end of all rules.                                        
-                        
-# 1. If  "spec.ingressClassName: my-aws-ingress-class" not specified, will reference default ingress class on this kubernetes cluster
-# 2. Default Ingress class is nothing but for which ingress class we have the annotation `ingressclass.kubernetes.io/is-default-class: "true"`
-      
     

@@ -7,14 +7,17 @@ env:
   variables:
     # Name of the EKS cluster
     EKS_CLUSTER_NAME: "eksdemo1"
+    AWS_DEFAULT_REGION: "ap-northeast-2"
     # IAM Role ARN used to assume access to EKS for kubectl
-    EKS_KUBECTL_ROLE_ARN: "arn:aws:iam::180789647333:role/EksCodeBuildKubectlRole"
+    EKS_KUBECTL_ROLE_ARN: "arn:aws:iam::086015456585:role/EksCodeBuildKubectlRole"
 
 phases:
   install:
     commands:
-      # Install dependencies/tools (if any)
-      - echo "Install Phase - Installing tools and dependencies"
+      - echo "Install Phase - Installing kubectl"
+      - curl -sSLo kubectl https://dl.k8s.io/release/v1.34.0/bin/linux/amd64/kubectl
+      - install -m 0755 kubectl /usr/local/bin/kubectl
+      - rm -f kubectl
 
   pre_build:
     commands:
@@ -44,7 +47,7 @@ phases:
       - export AWS_SESSION_TOKEN=$(echo $CREDENTIALS | jq -r '.Credentials.SessionToken')
       # Setup kubeconfig to interact with the EKS cluster
       - echo "Updating kubeconfig with EKS cluster credentials..."
-      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
+      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_DEFAULT_REGION
       # Deploy application manifests to EKS
       - echo "Applying Kubernetes manifests..."
       - kubectl apply -f kube-manifests/

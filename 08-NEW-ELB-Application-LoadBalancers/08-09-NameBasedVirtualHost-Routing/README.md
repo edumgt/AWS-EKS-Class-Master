@@ -39,7 +39,7 @@ metadata:
     # External DNS - For creating a Record Set in Route53
     external-dns.alpha.kubernetes.io/hostname: default101.stacksimplify.com 
 spec:
-  ingressClassName: my-aws-ingress-class   # Ingress Class                  
+  ingressClassName: alb   # Ingress Class                  
   defaultBackend:
     service:
       name: app3-nginx-nodeport-service
@@ -69,7 +69,7 @@ spec:
 
 # 중요-1: 경로 기반 라우팅에서는 순서가 매우 중요합니다. "/*"를 사용할 경우 모든 규칙의 마지막에 배치하세요.
                         
-# 1. "spec.ingressClassName: my-aws-ingress-class"가 지정되지 않으면 이 쿠버네티스 클러스터의 기본 ingress class를 참조합니다.
+# 1. "spec.ingressClassName: alb"가 지정되지 않으면 이 쿠버네티스 클러스터의 기본 ingress class를 참조합니다.
 # 2. 기본 Ingress class는 `ingressclass.kubernetes.io/is-default-class: "true"` 애노테이션이 있는 ingress class입니다.
                          
 ```

@@ -24,7 +24,7 @@ metadata:
     # alb.ingress.kubernetes.io/ssl-redirect: '443'
     # external-dns.alpha.kubernetes.io/hostname: abc.edumgt.co.kr, def.edumgt.co.kr
 spec:
-  ingressClassName: my-aws-ingress-class
+  ingressClassName: alb
   rules:
     - host: abc.edumgt.co.kr
       http:

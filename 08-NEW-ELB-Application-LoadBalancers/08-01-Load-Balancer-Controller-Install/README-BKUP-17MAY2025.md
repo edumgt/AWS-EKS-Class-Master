@@ -492,7 +492,7 @@ helm uninstall aws-load-balancer-controller -n kube-system
 apiVersion: networking.k8s.io/v1
 kind: IngressClass
 metadata:
-  name: my-aws-ingress-class
+  name: alb
   annotations:
     ingressclass.kubernetes.io/is-default-class: "true"
 spec:
@@ -516,7 +516,7 @@ kubectl apply -f kube-manifests
 kubectl get ingressclass
 
 # IngressClass 리소스 상세 확인
-kubectl describe ingressclass my-aws-ingress-class
+kubectl describe ingressclass alb
 ```
 
 ## 참고 자료

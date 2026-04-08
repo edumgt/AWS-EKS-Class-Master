@@ -6,7 +6,8 @@ version: 0.2
 env:
   variables:
     # ECR URI where Docker image will be pushed
-    IMAGE_URI: "180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/eks-devops"
+    IMAGE_URI: "086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx"
+    AWS_DEFAULT_REGION: "ap-northeast-2"
   exported-variables:
     # Variables that will be shared with downstream phases or pipelines
     - IMAGE_URI
@@ -20,12 +21,15 @@ phases:
 
   pre_build:
     commands:
-      # Generate a short Docker image tag using GitHub commit SHA (7 characters)
-      - IMAGE_TAG="$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-7)"
+      # Generate a Docker-safe image tag from the source revision, falling back to a timestamp
+      - SAFE_SOURCE_VERSION="$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-}" | tr -cd '[:alnum:]' | cut -c1-12)"
+      - IMAGE_TAG="${SAFE_SOURCE_VERSION:-$(date +%Y%m%d%H%M%S)}"
       - export IMAGE_TAG
+      - REGISTRY_URI="$(echo "$IMAGE_URI" | cut -d/ -f1)"
+      - export REGISTRY_URI
       # Authenticate Docker with ECR using AWS CLI
-      - echo "Logging into Amazon ECR at $IMAGE_URI..."
-      - aws ecr get-login-password | docker login --username AWS --password-stdin $IMAGE_URI
+      - echo "Logging into Amazon ECR at $REGISTRY_URI..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY_URI
 
   build:
     commands:

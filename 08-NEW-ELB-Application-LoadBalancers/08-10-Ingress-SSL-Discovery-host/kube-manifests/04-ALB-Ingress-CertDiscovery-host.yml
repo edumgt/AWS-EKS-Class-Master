@@ -27,7 +27,7 @@ metadata:
     # External DNS - For creating a Record Set in Route53
     external-dns.alpha.kubernetes.io/hostname: default102.stacksimplify.com 
 spec:
-  ingressClassName: my-aws-ingress-class   # Ingress Class                  
+  ingressClassName: alb   # Ingress Class                  
   defaultBackend:
     service:
       name: app3-nginx-nodeport-service
@@ -57,7 +57,7 @@ spec:
 
 # Important Note-1: In path based routing order is very important, if we are going to use  "/*", try to use it at the end of all rules.                                        
                         
-# 1. If  "spec.ingressClassName: my-aws-ingress-class" not specified, will reference default ingress class on this kubernetes cluster
+# 1. If  "spec.ingressClassName: alb" not specified, will reference default ingress class on this kubernetes cluster
 # 2. Default Ingress class is nothing but for which ingress class we have the annotation `ingressclass.kubernetes.io/is-default-class: "true"`
       
     

@@ -31,7 +31,7 @@ metadata:
     alb.ingress.kubernetes.io/group.name: myapps.web
     alb.ingress.kubernetes.io/group.order: '10'
 spec:
-  ingressClassName: my-aws-ingress-class   # Ingress Class
+  ingressClassName: alb   # Ingress Class
   rules:  
     - http:
         paths:

@@ -53,7 +53,7 @@ metadata:
     alb.ingress.kubernetes.io/healthy-threshold-count: '2'
     alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'   
 spec:
-  ingressClassName: my-aws-ingress-class   # Ingress Class                  
+  ingressClassName: alb   # Ingress Class                  
   rules:
     - http:
         paths:      
@@ -81,7 +81,7 @@ spec:
 
 # 중요-1: 경로 기반 라우팅에서는 순서가 매우 중요합니다. "/*"를 사용할 경우 모든 규칙의 마지막에 배치하세요.
                         
-# 1. "spec.ingressClassName: my-aws-ingress-class"가 지정되지 않으면 이 쿠버네티스 클러스터의 기본 ingress class를 참조합니다.
+# 1. "spec.ingressClassName: alb"가 지정되지 않으면 이 쿠버네티스 클러스터의 기본 ingress class를 참조합니다.
 # 2. 기본 Ingress class는 `ingressclass.kubernetes.io/is-default-class: "true"` 애노테이션이 있는 ingress class입니다.
 ```
 
@@ -126,7 +126,7 @@ http://<ALB-DNS-URL>/
 ### 단계-06-01: 루트 컨텍스트 경로를 상단으로 이동
 - **File:** 04-ALB-Ingress-ContextPath-Based-Routing.yml
 ```yaml
-  ingressClassName: my-aws-ingress-class   # Ingress Class                  
+  ingressClassName: alb   # Ingress Class                  
   rules:
     - http:
         paths:      
@@ -166,7 +166,7 @@ http://<ALB-DNS-URL>/  - SHOULD PASS
 ## 단계-07: 04-ALB-Ingress-ContextPath-Based-Routing.yml 변경 사항 롤백
 ```yaml
 spec:
-  ingressClassName: my-aws-ingress-class   # Ingress Class                  
+  ingressClassName: alb   # Ingress Class                  
   rules:
     - http:
         paths:      

@@ -722,3 +722,10 @@ kubectl delete -f kube-manifests/
 
 
 
+
+```
+aws codepipeline get-pipeline-execution \
+  --pipeline-name eks-devops \
+  --pipeline-execution-id 728b0839-1591-441f-a812-1f5ed8fd697b \
+  --region ap-northeast-2
+```

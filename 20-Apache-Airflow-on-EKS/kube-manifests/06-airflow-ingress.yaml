@@ -20,7 +20,7 @@ metadata:
     alb.ingress.kubernetes.io/ssl-redirect: "443"
     # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:ACCOUNT_ID:certificate/CERT_ID
 spec:
-  ingressClassName: my-aws-ingress-class
+  ingressClassName: alb
   rules:
     - http:
         paths:

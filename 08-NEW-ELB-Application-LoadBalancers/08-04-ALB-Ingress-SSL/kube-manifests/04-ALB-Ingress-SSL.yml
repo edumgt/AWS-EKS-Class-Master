@@ -20,10 +20,10 @@ metadata:
     alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'   
     ## SSL Settings
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}]'
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:086015456585:certificate/a3110ee7-a4a1-4ccc-ab77-419e4a15b0e3
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:086015456585:certificate/0fab49ab-9e02-4be7-b6a8-da0c17f77ee8
     #alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS-1-1-2017-01 #Optional (Picks default if not used)    
 spec:
-  ingressClassName: my-aws-ingress-class   # Ingress Class                  
+  ingressClassName: alb   # Ingress Class                  
   defaultBackend:
     service:
       name: app3-nginx-nodeport-service
@@ -49,7 +49,7 @@ spec:
 
 # Important Note-1: In path based routing order is very important, if we are going to use  "/*", try to use it at the end of all rules.                                        
                         
-# 1. If  "spec.ingressClassName: my-aws-ingress-class" not specified, will reference default ingress class on this kubernetes cluster
+# 1. If  "spec.ingressClassName: alb" not specified, will reference default ingress class on this kubernetes cluster
 # 2. Default Ingress class is nothing but for which ingress class we have the annotation `ingressclass.kubernetes.io/is-default-class: "true"`
       
     
