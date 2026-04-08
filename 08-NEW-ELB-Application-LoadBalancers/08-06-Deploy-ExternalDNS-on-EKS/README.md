@@ -110,7 +110,7 @@ eksctl get iamserviceaccount --cluster eksdemo1
 # 출력 예시
 Kalyans-Mac-mini:08-06-ALB-Ingress-ExternalDNS kalyanreddy$ eksctl get iamserviceaccount --cluster eksdemo1
 2022-02-11 09:34:39 [ℹ]  eksctl version 0.71.0
-2022-02-11 09:34:39 [ℹ]  using region us-east-1
+2022-02-11 09:34:39 [ℹ]  using region ap-northeast-2
 NAMESPACE	NAME				ROLE ARN
 default		external-dns			arn:aws:iam::180789647333:role/eksctl-eksdemo1-addon-iamserviceaccount-defa-Role1-JTO29BVZMA2N
 kube-system	aws-load-balancer-controller	arn:aws:iam::180789647333:role/eksctl-eksdemo1-addon-iamserviceaccount-kube-Role1-EFQB4C26EALH

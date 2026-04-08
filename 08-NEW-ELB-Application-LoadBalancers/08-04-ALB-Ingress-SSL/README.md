@@ -37,7 +37,7 @@ description: AWS Load Balancer Controller - Ingress SSL 학습
 ```yaml
     ## SSL Settings
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}]'
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:180789647333:certificate/632a3ff6-3f6d-464c-9121-b9d97481a76b
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:180789647333:certificate/632a3ff6-3f6d-464c-9121-b9d97481a76b
     #alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS-1-1-2017-01 #Optional (Picks default if not used)    
 ```
 ## 단계-05: 모든 매니페스트 배포 및 테스트
@@ -69,7 +69,7 @@ kubectl get svc
 - **Record Set** 생성
   - **Name:** ssldemo101.stacksimplify.com
   - **Alias:** yes
-  - **Alias Target:** ALB DNS 이름 복사(예: ssl-ingress-551932098.us-east-1.elb.amazonaws.com)
+  - **Alias Target:** ALB DNS 이름 복사(예: ssl-ingress-551932098.ap-northeast-2.elb.amazonaws.com)
   - **Create** 클릭
   
 ## 단계-07: 새로 등록한 DNS 이름으로 애플리케이션 접속

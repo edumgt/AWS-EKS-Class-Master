@@ -50,7 +50,7 @@ aws-cli/2.0.8 Python/3.7.5 Windows/10 botocore/2.0.0dev12
 aws configure
 AWS Access Key ID [None]: xxx
 AWS Secret Access Key [None]: xxx
-Default region name [None]: us-east-1
+Default region name [None]: ap-northeast-2
 Default output format [None]: json
 ```
 - 위 설정 이후 AWS CLI가 정상 동작하는지 테스트

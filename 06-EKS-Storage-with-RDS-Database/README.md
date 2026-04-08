@@ -30,7 +30,7 @@
   - **이름:** eks-rds-db-subnetgroup
   - **설명:** EKS RDS DB Subnet Group
   - **VPC:** eksctl-eksdemo1-cluster/VPC
-  - **가용 영역:** us-east-1a, us-east-1b
+  - **가용 영역:** ap-northeast-2a, ap-northeast-2b
   - **서브넷:** 2개 AZ에 2개 서브넷
   - **Create** 클릭
 

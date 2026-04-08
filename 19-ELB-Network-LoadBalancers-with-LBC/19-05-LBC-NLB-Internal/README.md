@@ -58,7 +58,7 @@ curl http://google.com/
 curl <INTERNAL-NETWORK-LB-DNS>
 
 # 내부 Network LB Curl 테스트
-curl lbc-network-lb-internal-demo-7031ade4ca457080.elb.us-east-1.amazonaws.com
+curl lbc-network-lb-internal-demo-7031ade4ca457080.elb.ap-northeast-2.amazonaws.com
 ```
 
 

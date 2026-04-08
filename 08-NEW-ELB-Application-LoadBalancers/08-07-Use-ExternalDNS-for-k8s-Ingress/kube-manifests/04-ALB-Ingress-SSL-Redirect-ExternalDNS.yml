@@ -20,7 +20,7 @@ metadata:
     alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'   
 
     # alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}]'
-    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:086015456585:certificate/0a8e4cb1-84af-4716-a083-5bb90155514d
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:086015456585:certificate/0a8e4cb1-84af-4716-a083-5bb90155514d
     # alb.ingress.kubernetes.io/ssl-redirect: '443'
     # external-dns.alpha.kubernetes.io/hostname: abc.edumgt.co.kr, def.edumgt.co.kr
 spec:

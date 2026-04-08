@@ -19,7 +19,7 @@
 ### EKS Fargate 프로파일
     - AWS Fargate 요금은 컨테이너 이미지 다운로드 시작 시점부터 EKS 파드 종료 시점까지 사용한 **vCPU 및 메모리** 리소스를 기준으로 계산됩니다.
     - **참고:** https://aws.amazon.com/fargate/pricing/
-    - Amazon EKS의 AWS Fargate 지원 리전: us-east-1, us-east-2, eu-west-1, ap-northeast-1
+    - Amazon EKS의 AWS Fargate 지원 리전: ap-northeast-2, us-east-2, eu-west-1, ap-northeast-1
 
 ### 중요 참고 사항
 - **중요 사항-1:** 개인 AWS 계정을 사용하는 경우, 필요할 때마다 클러스터와 워커 노드를 삭제 후 재생성하세요.

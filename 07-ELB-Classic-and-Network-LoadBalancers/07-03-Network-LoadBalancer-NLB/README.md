@@ -80,7 +80,7 @@ kubectl get pods
 - 새로운 NLB가 생성되었는지 확인
   - Services -> EC2 -> Load Balancing -> Load Balancers 로 이동
     - NLB가 생성되어 있어야 함
-    - DNS 이름 복사 (예: a85ae6e4030aa4513bd200f08f1eb9cc-7f13b3acc1bcaaa2.elb.us-east-1.amazonaws.com)
+    - DNS 이름 복사 (예: a85ae6e4030aa4513bd200f08f1eb9cc-7f13b3acc1bcaaa2.elb.ap-northeast-2.amazonaws.com)
   - Services -> EC2 -> Load Balancing -> Target Groups 로 이동
     - 헬스 상태를 확인하고 active 상태인지 확인
 - **애플리케이션 접속**

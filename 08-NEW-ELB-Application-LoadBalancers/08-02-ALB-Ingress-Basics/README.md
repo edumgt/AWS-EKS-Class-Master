@@ -105,7 +105,7 @@ kubectl get pods
 # Ingress 확인(ADDRESS 필드 기록)
 kubectl get ingress
 관찰 사항:
-1. ADDRESS 값을 확인합니다. 예) "app1ingress-1334515506.us-east-1.elb.amazonaws.com"
+1. ADDRESS 값을 확인합니다. 예) "app1ingress-1334515506.ap-northeast-2.elb.amazonaws.com"
 
 # Ingress Controller 설명 확인
 kubectl describe ingress ingress-nginxapp1
@@ -129,8 +129,8 @@ http://<INGRESS-ADDRESS-FIELD>
 http://<INGRESS-ADDRESS-FIELD>/app1/index.html
 
 # 내 환경 예시(참고용)
-http://app1ingress-154912460.us-east-1.elb.amazonaws.com
-http://app1ingress-154912460.us-east-1.elb.amazonaws.com/app1/index.html
+http://app1ingress-154912460.ap-northeast-2.elb.amazonaws.com
+http://app1ingress-154912460.ap-northeast-2.elb.amazonaws.com/app1/index.html
 
 # AWS Load Balancer Controller 로그 확인
 kubectl get po -n kube-system 
@@ -213,7 +213,7 @@ kubectl get pods
 # Ingress 확인(ADDRESS 필드 기록)
 kubectl get ingress
 관찰 사항:
-1. ADDRESS 값을 확인합니다. 예) "app1ingressrules-154912460.us-east-1.elb.amazonaws.com"
+1. ADDRESS 값을 확인합니다. 예) "app1ingressrules-154912460.ap-northeast-2.elb.amazonaws.com"
 
 # Ingress Controller 설명 확인
 kubectl describe ingress ingress-nginxapp1
@@ -237,8 +237,8 @@ http://<INGRESS-ADDRESS-FIELD>
 http://<INGRESS-ADDRESS-FIELD>/app1/index.html
 
 # 내 환경 예시(참고용)
-http://app1ingressrules-154912460.us-east-1.elb.amazonaws.com
-http://app1ingressrules-154912460.us-east-1.elb.amazonaws.com/app1/index.html
+http://app1ingressrules-154912460.ap-northeast-2.elb.amazonaws.com
+http://app1ingressrules-154912460.ap-northeast-2.elb.amazonaws.com/app1/index.html
 
 # AWS Load Balancer Controller 로그 확인
 kubectl get po -n kube-system 

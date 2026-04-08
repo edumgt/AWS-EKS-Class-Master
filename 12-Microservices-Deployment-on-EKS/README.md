@@ -112,7 +112,7 @@ aws sesv2 get-account --region "$REGION"
 
 여기서 “SendingEnabled” 류 정보(계정 송신 가능 여부)가 확인됩니다.
 
-만약 리전 이슈가 있으면, 보통 us-east-1 같은 SES 메인 리전으로 진행하는 게 빠릅니다.
+만약 리전 이슈가 있으면, 보통 ap-northeast-2 같은 SES 메인 리전으로 진행하는 게 빠릅니다.
 
 4) 다음 단계 미리 점검: 샌드박스인지 확인
 
@@ -316,7 +316,7 @@ swaks --to you@example.com \
 - **IAM User Name:** 기본 생성된 이름에 microservice 등 식별용 접미사를 붙입니다.
 - 자격 증명을 다운로드하고 아래 환경 변수를 `04-NotificationMicroservice-Deployment.yml`에 설정합니다.
 ```
-AWS_MAIL_SERVER_HOST=email-smtp.us-east-1.amazonaws.com
+AWS_MAIL_SERVER_HOST=email-smtp.ap-northeast-2.amazonaws.com
 AWS_MAIL_SERVER_USERNAME=****
 AWS_MAIL_SERVER_PASSWORD=***
 AWS_MAIL_SERVER_FROM_ADDRESS= use-a-valid-email@gmail.com 
@@ -333,7 +333,7 @@ AWS_MAIL_SERVER_FROM_ADDRESS= use-a-valid-email@gmail.com
 - **중요:** FromAddress와 ToAddress 모두 SES에서 검증되어야 합니다.
     - 참고 링크: https://docs.aws.amazon.com/ses/latest/DeveloperGuide/verify-email-addresses.html    
 - 환경 변수
-    - AWS_MAIL_SERVER_HOST=email-smtp.us-east-1.amazonaws.com
+    - AWS_MAIL_SERVER_HOST=email-smtp.ap-northeast-2.amazonaws.com
     - AWS_MAIL_SERVER_USERNAME=*****
     - AWS_MAIL_SERVER_PASSWORD=*****
     - AWS_MAIL_SERVER_FROM_ADDRESS=stacksimplify@gmail.com
@@ -361,7 +361,7 @@ metadata:
   name: smtp-service
 spec:
   type: ExternalName
-  externalName: email-smtp.us-east-1.amazonaws.com
+  externalName: email-smtp.ap-northeast-2.amazonaws.com
 ```
 
 ## Step-06: 알림 마이크로서비스 NodePort 서비스 생성

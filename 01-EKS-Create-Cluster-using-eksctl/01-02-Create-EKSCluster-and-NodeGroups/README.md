@@ -33,13 +33,13 @@ eksctl get cluster
 ```                   
 # 템플릿
 eksctl utils associate-iam-oidc-provider \
-    --region region-code \
+    --region ap-northeast-2 \
     --cluster <cluter-name> \
     --approve
 
 # 리전 및 클러스터 이름 교체
 eksctl utils associate-iam-oidc-provider \
-    --region us-east-1 \
+    --region ap-northeast-2 \
     --cluster eksdemo1 \
     --approve
 ```

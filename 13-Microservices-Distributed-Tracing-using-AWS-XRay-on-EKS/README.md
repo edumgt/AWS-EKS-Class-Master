@@ -334,7 +334,7 @@ kubectl describe daemonset xray-daemon
 - **07-ALB-Ingress-SSL-Redirect-ExternalDNS.yml**
 ```yml
 # 변경-1: 사용 중인 SSL Cert ARN으로 업데이트
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:180789647333:certificate/9f042b5d-86fd-4fad-96d0-c81c5abc71e1
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:180789647333:certificate/9f042b5d-86fd-4fad-96d0-c81c5abc71e1
 
 # 변경-2: "yourdomainname.com"으로 업데이트
     # External DNS - Route53에 레코드 셋 생성

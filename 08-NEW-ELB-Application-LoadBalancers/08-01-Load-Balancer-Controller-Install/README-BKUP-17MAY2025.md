@@ -32,8 +32,8 @@ https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
 ```t
 # 클러스터 생성(Section-01-02)
 eksctl create cluster --name=eksdemo1 \
-                      --region=us-east-1 \
-                      --zones=us-east-1a,us-east-1b \
+                      --region=ap-northeast-2 \
+                      --zones=ap-northeast-2a,ap-northeast-2b \
                       --version="1.21" \
                       --without-nodegroup 
 
@@ -43,19 +43,19 @@ eksctl get cluster
 
 # 템플릿(Section-01-02)
 eksctl utils associate-iam-oidc-provider \
-    --region region-code \
+    --region ap-northeast-2 \
     --cluster <cluter-name> \
     --approve
 
 # region 및 cluster name으로 교체(Section-01-02)
 eksctl utils associate-iam-oidc-provider \
-    --region us-east-1 \
+    --region ap-northeast-2 \
     --cluster eksdemo1 \
     --approve
 
 # VPC 프라이빗 서브넷에 EKS NodeGroup 생성(Section-07-01)
 eksctl create nodegroup --cluster=eksdemo1 \
-                        --region=us-east-1 \
+                        --region=ap-northeast-2 \
                         --name=eksdemo1-ng-private1 \
                         --node-type=t3.medium \
                         --nodes-min=2 \
@@ -88,8 +88,8 @@ eksctl get iamserviceaccount --cluster=eksdemo1
 
 # kubectl용 kubeconfig 설정
 eksctl get cluster # TO GET CLUSTER NAME
-aws eks --region <region-code> update-kubeconfig --name <cluster_name>
-aws eks --region us-east-1 update-kubeconfig --name eksdemo1
+aws eks --region <ap-northeast-2> update-kubeconfig --name <cluster_name>
+aws eks --region ap-northeast-2 update-kubeconfig --name eksdemo1
 
 # kubectl로 EKS 노드 확인
 kubectl get nodes
@@ -200,7 +200,7 @@ Kalyans-MacBook-Pro:08-01-Load-Balancer-Controller-Install kdaida$ eksctl create
 >   --override-existing-serviceaccounts \
 >   --approve
 2022-02-02 10:22:49 [ℹ]  eksctl version 0.82.0
-2022-02-02 10:22:49 [ℹ]  using region us-east-1
+2022-02-02 10:22:49 [ℹ]  using region ap-northeast-2
 2022-02-02 10:22:52 [ℹ]  1 iamserviceaccount (kube-system/aws-load-balancer-controller) was included (based on the include/exclude rules)
 2022-02-02 10:22:52 [!]  metadata of serviceaccounts that exist in Kubernetes will be updated, as --override-existing-serviceaccounts was set
 2022-02-02 10:22:52 [ℹ]  1 task: { 
@@ -224,7 +224,7 @@ eksctl  get iamserviceaccount --cluster eksdemo1
 # 출력 예시
 Kalyans-MacBook-Pro:08-01-Load-Balancer-Controller-Install kdaida$ eksctl  get iamserviceaccount --cluster eksdemo1
 2022-02-02 10:23:50 [ℹ]  eksctl version 0.82.0
-2022-02-02 10:23:50 [ℹ]  using region us-east-1
+2022-02-02 10:23:50 [ℹ]  using region ap-northeast-2
 NAMESPACE	NAME				ROLE ARN
 kube-system	aws-load-balancer-controller	arn:aws:iam::180789647333:role/eksctl-eksdemo1-addon-iamserviceaccount-kube-Role1-1244GWMVEAKEN
 Kalyans-MacBook-Pro:08-01-Load-Balancer-Controller-Install kdaida$ 
@@ -278,14 +278,14 @@ helm version
 ### 단계-04-02: AWS Load Balancer Controller 설치
 - **중요 1:** IMDS 접근이 제한된 Amazon EC2 노드에 컨트롤러를 배포하거나 Fargate에 배포하는 경우 다음 플래그를 추가하세요.
 ```t
---set region=region-code
+--set region=ap-northeast-2
 --set vpcId=vpc-xxxxxxxx
 ```
  - **중요 2:** **사용 중단(Deprecated)**
-  - us-west-2 이외의 리전에 배포할 경우 다음 플래그를 추가하고, account 및 region-code를 Amazon EKS 애드온 컨테이너 이미지 주소에 있는 값으로 바꿉니다.
+  - us-west-2 이외의 리전에 배포할 경우 다음 플래그를 추가하고, account 및 ap-northeast-2를 Amazon EKS 애드온 컨테이너 이미지 주소에 있는 값으로 바꿉니다.
 - [리전 코드 및 계정 정보 확인](https://docs.aws.amazon.com/eks/latest/userguide/add-ons-images.html)
 ```t
---set image.repository=account.dkr.ecr.region-code.amazonaws.com/amazon/aws-load-balancer-controller
+--set image.repository=account.dkr.ecr.ap-northeast-2.amazonaws.com/amazon/aws-load-balancer-controller
 ```
 - **중요 3:** **새로 추가됨 - 권장**
   - 리전별 이미지 URI를 더 이상 사용할 필요가 없습니다.
@@ -303,7 +303,7 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set clusterName=<cluster-name> \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
-  --set region=<region-code> \
+  --set region=<ap-northeast-2> \
   --set vpcId=<vpc-xxxxxxxx> \
   --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
 
@@ -313,7 +313,7 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set clusterName=eksdemo1 \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
-  --set region=us-east-1 \
+  --set region=ap-northeast-2 \
   --set vpcId=vpc-0165a396e41e292a3 \
   --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
 ```
@@ -325,7 +325,7 @@ Kalyans-MacBook-Pro:08-01-Load-Balancer-Controller-Install kdaida$ helm install 
 >   --set clusterName=eksdemo1 \
 >   --set serviceAccount.create=false \
 >   --set serviceAccount.name=aws-load-balancer-controller \
->   --set region=us-east-1 \
+>   --set region=ap-northeast-2 \
 >   --set vpcId=vpc-0570fda59c5aaf192 \
 >   --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
 NAME: aws-load-balancer-controller

@@ -7,4 +7,4 @@ metadata:
   namespace: ns-ums
 spec:
   type: ExternalName
-  externalName: usermgmtdb.cxojydmxwly6.us-east-1.rds.amazonaws.com
+  externalName: usermgmtdb.cxojydmxwly6.ap-northeast-2.rds.amazonaws.com

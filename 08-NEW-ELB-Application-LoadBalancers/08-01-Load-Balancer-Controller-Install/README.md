@@ -34,34 +34,60 @@ kubectl version
 
 ### 사전 준비-2: EKS 클러스터 및 워커 노드 생성
 - 아직 클러스터가 없다면 아래 예시를 참고해 생성합니다.
-- 예시 값은 `eksdemo1`, `us-east-1` 기준입니다.
+- 예시 값은 `eksdemo1`, `ap-northeast-2` 기준입니다.
 
 ```bash
 # 클러스터 생성
 eksctl create cluster --name=eksdemo1 \
-                      --region=us-east-1 \
-                      --zones=us-east-1a,us-east-1b \
-                      --version="1.21" \
+                      --region=ap-northeast-2 \
+                      --zones=ap-northeast-2a,ap-northeast-2b \
+                      --version="1.35" \
                       --without-nodegroup
 
 # 클러스터 목록 확인
 eksctl get cluster
+aws eks list-clusters --region ap-northeast-2
 
 # OIDC Provider 연결 템플릿
-eksctl utils associate-iam-oidc-provider \
-    --region region-code \
-    --cluster <cluster-name> \
-    --approve
+```
+OIDC Provider는 EKS에서 IRSA(IAM Roles for Service Accounts)를 쓰기 위해 연결하는 "신뢰된 인증 제공자"입니다.
 
-# 예시
+쉽게 말하면, Kubernetes의 ServiceAccount가 발급받는 토큰을 AWS IAM이 믿고 검증할 수 있게 해주는 다리 역할입니다.
+
+핵심 흐름은 이렇습니다.
+
+EKS 클러스터는 자체 OIDC issuer URL을 가집니다.
+AWS IAM에 그 issuer를 OIDC Provider로 등록합니다.
+특정 Kubernetes ServiceAccount와 특정 IAM Role을 연결합니다.
+Pod가 그 ServiceAccount로 실행되면, AWS는 토큰을 보고 "이 Pod가 이 Role을 맡아도 되는지" 판단합니다.
+왜 필요한가:
+
+Pod에 AWS 권한을 줄 수 있습니다.
+노드 IAM Role에 권한을 몰아주지 않아도 됩니다.
+서비스별 최소 권한 부여가 가능합니다.
+예를 들어 AWS Load Balancer Controller가 ELB, Target Group 등을 만들도록 안전하게 권한을 줄 수 있습니다.
+EKS에서 특히 중요한 이유:
+
+aws-load-balancer-controller는 AWS API를 호출해야 합니다.
+이 컨트롤러 Pod가 AWS 권한을 얻으려면 보통 OIDC Provider + IAM Role + ServiceAccount 구성이 필요합니다.
+eksctl utils associate-iam-oidc-provider --cluster ... --approve가 하는 일:
+
+EKS 클러스터의 OIDC issuer를 확인하고
+그 issuer를 IAM OIDC Provider로 등록해
+이후 IRSA를 사용할 수 있게 준비합니다.
+정리하면:
+
+OIDC Provider = "이 EKS 클러스터에서 나온 서비스어카운트 토큰을 AWS가 신뢰하도록 등록하는 설정"
+```
+```
 eksctl utils associate-iam-oidc-provider \
-    --region us-east-1 \
+    --region ap-northeast-2 \
     --cluster eksdemo1 \
     --approve
-
+```
 # 프라이빗 서브넷용 EKS NodeGroup 생성 예시
 eksctl create nodegroup --cluster=eksdemo1 \
-                        --region=us-east-1 \
+                        --region=ap-northeast-2 \
                         --name=eksdemo1-ng-private1 \
                         --node-type=t3.medium \
                         --nodes-min=2 \
@@ -91,8 +117,8 @@ eksctl get nodegroup --cluster=eksdemo1
 eksctl get iamserviceaccount --cluster=eksdemo1
 
 # kubeconfig 설정
-aws eks --region <region-code> update-kubeconfig --name <cluster-name>
-aws eks --region us-east-1 update-kubeconfig --name eksdemo1
+aws eks --region <ap-northeast-2> update-kubeconfig --name <cluster-name>
+aws eks --region ap-northeast-2 update-kubeconfig --name eksdemo1
 
 # 노드 확인
 kubectl get nodes
@@ -267,9 +293,6 @@ Annotations:
 - AWS EKS용 참고 문서: [Helm on Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/helm.html)
 
 ```bash
-# macOS 예시
-brew install helm
-
 # 버전 확인
 helm version
 ```
@@ -286,7 +309,7 @@ sudo snap install helm --classic
 - IMDS 접근이 제한된 EC2 노드나 Fargate에 배포하는 경우 아래 값을 추가할 수 있습니다.
 
 ```text
---set region=region-code
+--set region=ap-northeast-2
 --set vpcId=vpc-xxxxxxxx
 ```
 

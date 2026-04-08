@@ -4,4 +4,4 @@ metadata:
   name: smtp-service
 spec:
   type: ExternalName
-  externalName: email-smtp.us-east-1.amazonaws.com
+  externalName: email-smtp.ap-northeast-2.amazonaws.com

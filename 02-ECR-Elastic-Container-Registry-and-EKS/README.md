@@ -34,7 +34,7 @@
 aws configure
 AWS Access Key ID: ****
 AWS Secret Access Key: ****
-Default Region Name: us-east-1
+Default Region Name: ap-northeast-2
 ```
 
 ## Step-04: ECR 리포지토리 생성
@@ -45,7 +45,7 @@ Default Region Name: us-east-1
 - ECR 콘솔 탐색
 - **AWS CLI로 ECR 리포지토리 생성**
 ```
-aws ecr create-repository --repository-name aws-ecr-kubenginx --region us-east-1
+aws ecr create-repository --repository-name aws-ecr-kubenginx --region ap-northeast-2
 aws ecr create-repository --repository-name <your-repo-name> --region <your-region>
 ```
 
@@ -56,11 +56,11 @@ aws ecr create-repository --repository-name <your-repo-name> --region <your-regi
 ```
 # Build Docker Image
 docker build -t <ECR-REPOSITORY-URI>:<TAG> . 
-docker build -t 180789647333.dkr.ecr.us-east-1.amazonaws.com/aws-ecr-kubenginx:1.0.0 . 
+docker build -t 180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:1.0.0 . 
 
 # Run Docker Image locally & Test
 docker run --name <name-of-container> -p 80:80 --rm -d <ECR-REPOSITORY-URI>:<TAG>
-docker run --name aws-ecr-kubenginx -p 80:80 --rm -d 180789647333.dkr.ecr.us-east-1.amazonaws.com/aws-ecr-kubenginx:1.0.0
+docker run --name aws-ecr-kubenginx -p 80:80 --rm -d 180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:1.0.0
 
 # Access Application locally
 http://localhost
@@ -78,11 +78,11 @@ docker ps -a -q
 ```
 # Get Login Password
 aws ecr get-login-password --region <your-region> | docker login --username AWS --password-stdin <ECR-REPOSITORY-URI>
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 180789647333.dkr.ecr.us-east-1.amazonaws.com/aws-ecr-kubenginx
+aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx
 
 # Push the Docker Image
 docker push <ECR-REPOSITORY-URI>:<TAG>
-docker push 180789647333.dkr.ecr.us-east-1.amazonaws.com/aws-ecr-kubenginx:1.0.0
+docker push 180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:1.0.0
 ```
 - AWS ECR에서 새로 푸시된 Docker 이미지를 확인합니다.
 - 취약점 스캔 결과를 확인합니다.

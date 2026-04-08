@@ -62,7 +62,7 @@ kubectl get pods
 image: ghcr.io/stacksimplify/kube-nginxapp1:1.0.0 # FOR TESTING
 
 ## Step-02: Verify and Update Ingress manifest (03-DEVOPS-Nginx-ALB-IngressService.yml) with DNS Names and SSL Cert
-alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:180789647333:certificate/126847a6-a5ee-41d0-8deb-2d8a85217c73
+alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:180789647333:certificate/126847a6-a5ee-41d0-8deb-2d8a85217c73
 external-dns.alpha.kubernetes.io/hostname: eksdevops1.stacksimplify.com, eksdevops2.stacksimplify.com
 
 ## Step-03: DEPLOY AND VERIFY
@@ -98,7 +98,7 @@ image: CONTAINER_IMAGE # FOR DEVOPS Pipeline
 - Make a note of Repository name
 ```t
 # Sample ECR Repository URI
-180789647333.dkr.ecr.us-east-1.amazonaws.com/eks-devops-app1
+180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/eks-devops-app1
 ```
 
 ## Step-05: Create GitHub Repository
@@ -144,7 +144,7 @@ version: 0.2
 env:
   variables:
     # ECR URI where Docker image will be pushed
-    IMAGE_URI: "180789647333.dkr.ecr.us-east-1.amazonaws.com/eks-devops"
+    IMAGE_URI: "180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/eks-devops"
   exported-variables:
     # Variables that will be shared with downstream phases or pipelines
     - IMAGE_URI
@@ -654,13 +654,13 @@ http://myapp1.stacksimplify.com/app1/index.html
 #### Edit Action
 - Action Name: DeploymentApproval
 - Action Provider: Manual Approval
-- SNS Topic ARN: arn:aws:sns:us-east-1:180789647333:eks-devops-topic1 
+- SNS Topic ARN: arn:aws:sns:ap-northeast-2:180789647333:eks-devops-topic1 
 - REST ALL LEAVE TO DEFAULTS
 - Click on **DONE**
 - Click on **SAVE** to save pipeline
 ### Step-10-04: Give SNS Full access to AWS CodePipeline Role
 - Go to AWS CodePipeline -> eks-devops -> Settings -> Service role ARN
-- In IAM for ROLE: **AWSCodePipelineServiceRole-us-east-1-eks-devops-pipeline-551**
+- In IAM for ROLE: **AWSCodePipelineServiceRole-ap-northeast-2-eks-devops-pipeline-551**
 - Attach Permissions: **AmazonSNSFullAccess**
 
 

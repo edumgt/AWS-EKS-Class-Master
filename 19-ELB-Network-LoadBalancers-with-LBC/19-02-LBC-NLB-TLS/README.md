@@ -15,7 +15,7 @@ description: AWS Load Balancer Controller로 AWS Network Load Balancer TLS를 �
 - **보안 정책:** https://docs.aws.amazon.com/elasticloadbalancing/latest/network/create-tls-listener.html#describe-ssl-policies
 ```yaml
     # TLS
-    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:180789647333:certificate/d86de939-8ffd-410f-adce-0ce1f5be6e0d
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:ap-northeast-2:180789647333:certificate/d86de939-8ffd-410f-adce-0ce1f5be6e0d
     service.beta.kubernetes.io/aws-load-balancer-ssl-ports: 443, # Specify this annotation if you need both TLS and non-TLS listeners on the same load balancer
     service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp 
@@ -53,11 +53,11 @@ Services -> EC2 -> Load Balancing -> Target Groups로 이동
 # 애플리케이션 접속
 # HTTP URL 테스트
 http://<NLB-DNS-NAME>
-http://lbc-network-lb-tls-demo-a956479ba85953f8.elb.us-east-1.amazonaws.com
+http://lbc-network-lb-tls-demo-a956479ba85953f8.elb.ap-northeast-2.amazonaws.com
 
 # HTTPS URL 테스트
 https://<NLB-DNS-NAME>
-https://lbc-network-lb-tls-demo-a956479ba85953f8.elb.us-east-1.amazonaws.com
+https://lbc-network-lb-tls-demo-a956479ba85953f8.elb.ap-northeast-2.amazonaws.com
 ```
 
 ## 단계-04: 정리

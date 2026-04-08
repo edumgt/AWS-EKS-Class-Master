@@ -128,8 +128,8 @@
 
 | 애플리케이션 이름  | Docker 이미지 이름 |
 | ----------------- | ----------------- |
-| AWS Elastic Container Registry  | YOUR-AWS-ACCOUNT-ID.dkr.ecr.us-east-1.amazonaws.com/aws-ecr-kubenginx:DATETIME-REPOID  |
-| DevOps 유스케이스  | YOUR-AWS-ACCOUNT-ID.dkr.ecr.us-east-1.amazonaws.com/eks-devops-nginx:DATETIME-REPOID  |
+| AWS Elastic Container Registry  | YOUR-AWS-ACCOUNT-ID.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:DATETIME-REPOID  |
+| DevOps 유스케이스  | YOUR-AWS-ACCOUNT-ID.dkr.ecr.ap-northeast-2.amazonaws.com/eks-devops-nginx:DATETIME-REPOID  |
 
 
 ## 샘플 애플리케이션
