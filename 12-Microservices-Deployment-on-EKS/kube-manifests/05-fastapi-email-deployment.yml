@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ses-email-fullstack
+  namespace: ns-ums
+  labels:
+    app: ses-email-fullstack
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ses-email-fullstack
+  template:
+    metadata:
+      labels:
+        app: ses-email-fullstack
+    spec:
+      serviceAccountName: ses-email-app-sa
+      containers:
+        - name: fastapi-email-app
+          image: CONTAINER_IMAGE
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: ses-email-app-config
+            - secretRef:
+                name: ses-email-app-secret
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

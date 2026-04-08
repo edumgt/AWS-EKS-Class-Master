@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980">
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .title { font: 700 30px Arial, sans-serif; fill: #111827; }
+      .subtitle { font: 400 16px Arial, sans-serif; fill: #475569; }
+      .section { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 24; ry: 24; }
+      .cluster { fill: #fefce8; stroke: #eab308; stroke-width: 2; rx: 24; ry: 24; }
+      .node { fill: #ffffff; stroke: #94a3b8; stroke-width: 2; rx: 18; ry: 18; }
+      .small { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 16; ry: 16; }
+      .label { font: 700 18px Arial, sans-serif; fill: #0f172a; }
+      .text { font: 400 14px Arial, sans-serif; fill: #334155; }
+      .arrow { stroke: #475569; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+      .dash { stroke-dasharray: 10 8; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#475569" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="980" />
+  <text class="title" x="60" y="60">Section 12 Microservices Deployment On EKS</text>
+  <text class="subtitle" x="60" y="92">FastAPI + Uvicorn + vanilla HTML + AWS SES with CodePipeline, CodeBuild, ECR, EKS, ALB, IAM IRSA, and optional Secrets Manager flow</text>
+
+  <rect class="section" x="50" y="130" width="430" height="310" />
+  <text class="label" x="80" y="170">Source And CI/CD</text>
+
+  <rect class="node" x="80" y="205" width="130" height="90" />
+  <text class="label" x="109" y="240">Developer</text>
+  <text class="text" x="98" y="265">Section 12 source</text>
+
+  <rect class="node" x="250" y="195" width="180" height="110" />
+  <image href="assets/architecture-icons/s3.svg" x="265" y="215" width="48" height="48" />
+  <text class="label" x="325" y="238">Amazon S3</text>
+  <text class="text" x="325" y="262">Source zip</text>
+  <text class="text" x="325" y="282">Artifact bucket</text>
+
+  <rect class="node" x="80" y="325" width="150" height="90" />
+  <image href="assets/architecture-icons/codepipeline.svg" x="95" y="345" width="48" height="48" />
+  <text class="label" x="153" y="368">CodePipeline</text>
+  <text class="text" x="153" y="390">ses-email-fullstack</text>
+
+  <rect class="node" x="270" y="325" width="160" height="90" />
+  <image href="assets/architecture-icons/codebuild.svg" x="285" y="345" width="48" height="48" />
+  <text class="label" x="345" y="368">CodeBuild</text>
+  <text class="text" x="345" y="390">Build / Deploy</text>
+
+  <path class="arrow" d="M210 250 L250 250" />
+  <path class="arrow" d="M155 295 L155 325" />
+  <path class="arrow" d="M340 305 L340 325" />
+  <path class="arrow" d="M230 370 L270 370" />
+
+  <rect class="section" x="520" y="130" width="260" height="310" />
+  <text class="label" x="550" y="170">Image Registry</text>
+
+  <rect class="node" x="560" y="225" width="180" height="120" />
+  <image href="assets/architecture-icons/ecr.svg" x="575" y="248" width="56" height="56" />
+  <text class="label" x="645" y="272">Amazon ECR</text>
+  <text class="text" x="645" y="295">ses-email-fullstack</text>
+  <text class="text" x="645" y="315">versioned image tags</text>
+
+  <path class="arrow" d="M430 370 L520 370" />
+
+  <rect class="cluster" x="820" y="130" width="720" height="760" />
+  <text class="label" x="850" y="170">Amazon EKS Cluster: eksdemo1</text>
+
+  <rect class="small" x="850" y="205" width="240" height="120" />
+  <image href="assets/architecture-icons/iam.svg" x="865" y="228" width="48" height="48" />
+  <text class="label" x="925" y="252">IAM / IRSA</text>
+  <text class="text" x="925" y="274">ses-email-app-sa</text>
+  <text class="text" x="925" y="294">eks-ses-send-role</text>
+
+  <rect class="small" x="1120" y="205" width="380" height="120" />
+  <image href="assets/architecture-icons/alb.svg" x="1140" y="228" width="48" height="48" />
+  <text class="label" x="1200" y="252">ALB Ingress</text>
+  <text class="text" x="1200" y="274">07-alb-ingress.yml</text>
+  <text class="text" x="1200" y="294">internet-facing entry point</text>
+
+  <rect class="small" x="850" y="360" width="650" height="240" />
+  <image href="assets/architecture-icons/eks.svg" x="875" y="390" width="56" height="56" />
+  <text class="label" x="945" y="410">Kubernetes Workloads</text>
+
+  <rect class="node" x="945" y="435" width="250" height="135" />
+  <text class="label" x="975" y="465">ses-email-fullstack</text>
+  <text class="text" x="975" y="490">FastAPI + Uvicorn</text>
+  <text class="text" x="975" y="512">vanilla HTML frontend</text>
+  <text class="text" x="975" y="534">Service on port 80 -> 8000</text>
+
+  <rect class="node" x="1230" y="435" width="240" height="135" />
+  <text class="label" x="1260" y="465">notif-deploy.yaml</text>
+  <text class="text" x="1260" y="490">SecretProviderClass</text>
+  <text class="text" x="1260" y="512">notification-microservice</text>
+  <text class="text" x="1260" y="534">notifications namespace</text>
+
+  <rect class="small" x="850" y="635" width="260" height="170" />
+  <image href="assets/architecture-icons/secrets-manager.svg" x="875" y="665" width="56" height="56" />
+  <text class="label" x="945" y="690">Secrets Manager</text>
+  <text class="text" x="945" y="712">SMTP secret for</text>
+  <text class="text" x="945" y="732">notif-deploy.yaml via CSI</text>
+
+  <rect class="small" x="1160" y="635" width="300" height="170" />
+  <image href="assets/architecture-icons/ses.svg" x="1185" y="665" width="56" height="56" />
+  <text class="label" x="1255" y="690">Amazon SES</text>
+  <text class="text" x="1255" y="712">SendEmail / SendRawEmail</text>
+  <text class="text" x="1255" y="732">kimdypm@gmail.com sender</text>
+
+  <path class="arrow" d="M780 370 L850 370" />
+  <path class="arrow" d="M1310 325 L1310 435" />
+  <path class="arrow" d="M1090 265 L1070 435" />
+  <path class="arrow" d="M1195 502 L1160 502" />
+  <path class="arrow" d="M1070 570 L1070 635" />
+  <path class="arrow" d="M1340 570 L1340 635" />
+  <path class="arrow" d="M1195 502 L1240 665" />
+  <path class="arrow dash" d="M1110 720 L1160 720" />
+
+  <rect class="section" x="50" y="490" width="730" height="360" />
+  <text class="label" x="80" y="530">Execution Steps</text>
+
+  <rect class="node" x="85" y="565" width="150" height="90" />
+  <text class="label" x="133" y="600">1. Source</text>
+  <text class="text" x="110" y="625">Zip and upload</text>
+
+  <rect class="node" x="260" y="565" width="150" height="90" />
+  <text class="label" x="303" y="600">2. Build</text>
+  <text class="text" x="285" y="625">Docker build</text>
+
+  <rect class="node" x="435" y="565" width="150" height="90" />
+  <text class="label" x="476" y="600">3. Push</text>
+  <text class="text" x="460" y="625">Push to ECR</text>
+
+  <rect class="node" x="610" y="565" width="140" height="90" />
+  <text class="label" x="636" y="600">4. Deploy</text>
+  <text class="text" x="627" y="625">kubectl apply</text>
+
+  <rect class="node" x="145" y="700" width="220" height="100" />
+  <text class="label" x="175" y="735">5. Runtime</text>
+  <text class="text" x="175" y="760">Browser -> ALB -> FastAPI</text>
+  <text class="text" x="175" y="780">FastAPI -> SES</text>
+
+  <rect class="node" x="420" y="700" width="290" height="100" />
+  <text class="label" x="455" y="735">6. Optional Notification Path</text>
+  <text class="text" x="455" y="760">notif-deploy.yaml -> CSI -> Secrets Manager</text>
+  <text class="text" x="455" y="780">notification-microservice -> SMTP secret</text>
+
+  <path class="arrow" d="M235 610 L260 610" />
+  <path class="arrow" d="M410 610 L435 610" />
+  <path class="arrow" d="M585 610 L610 610" />
+  <path class="arrow" d="M680 655 L680 690 L365 690" />
+  <path class="arrow dash" d="M365 750 L420 750" />
+</svg>

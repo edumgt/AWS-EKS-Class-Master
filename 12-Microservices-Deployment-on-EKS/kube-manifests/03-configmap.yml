@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ses-email-app-config
+  namespace: ns-ums
+data:
+  APP_TITLE: "AWS SES Email Demo"
+  SES_REGION: "ap-northeast-2"
+  SES_SUBJECT_PREFIX: "[EKS SES Demo]"

@@ -1,0 +1,56 @@
+# buildspec-build.yml
+
+version: 0.2
+
+# Environment variables and values used across phases
+env:
+  variables:
+    # ECR URI where Docker image will be pushed
+    IMAGE_URI: "086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/ses-email-fullstack"
+    AWS_DEFAULT_REGION: "ap-northeast-2"
+  exported-variables:
+    # Variables that will be shared with downstream phases or pipelines
+    - IMAGE_URI
+    - IMAGE_TAG
+
+phases:
+  install:
+    commands:
+      # Install phase (empty here since the CodeBuild image has necessary tools)
+      - echo "Install Phase - Nothing to do using latest Amazon Linux Docker Image"
+
+  pre_build:
+    commands:
+      # Generate a Docker-safe image tag from the source revision, falling back to a timestamp
+      - SAFE_SOURCE_VERSION="$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-}" | tr -cd '[:alnum:]' | cut -c1-12)"
+      - IMAGE_TAG="${SAFE_SOURCE_VERSION:-$(date +%Y%m%d%H%M%S)}"
+      - export IMAGE_TAG
+      - REGISTRY_URI="$(echo "$IMAGE_URI" | cut -d/ -f1)"
+      - export REGISTRY_URI
+      # Authenticate Docker with ECR using AWS CLI
+      - echo "Logging into Amazon ECR at $REGISTRY_URI..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY_URI
+
+  build:
+    commands:
+      # Build Docker image using Dockerfile in the FastAPI app directory
+      - echo "Building Docker image..."
+      - docker build -t $IMAGE_URI:$IMAGE_TAG ./ses-email-fullstack-app
+
+  post_build:
+    commands:
+      # Push the built Docker image to ECR repository
+      - echo "Pushing Docker image to ECR..."
+      - docker push $IMAGE_URI:$IMAGE_TAG
+      # Export image metadata to be used in the deploy stage
+      - echo "Exporting variables for downstream stages..."
+      - echo "IMAGE_URI=$IMAGE_URI" >> $CODEBUILD_SRC_DIR/exported-vars.env
+      - echo "IMAGE_TAG=$IMAGE_TAG" >> $CODEBUILD_SRC_DIR/exported-vars.env
+
+# Files that will be included as artifacts for the next stage
+artifacts:
+  files:
+    - exported-vars.env
+    - buildspec-deploy.yml
+    - '**/kube-manifests/**/*'
+    - notif-deploy.yaml

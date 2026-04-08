@@ -1,0 +1,89 @@
+# buildspec-deploy.yml
+
+version: 0.2
+
+# Environment variables required for EKS authentication
+env:
+  variables:
+    # Name of the EKS cluster
+    EKS_CLUSTER_NAME: "eksdemo1"
+    AWS_DEFAULT_REGION: "ap-northeast-2"
+    # IAM Role ARN used to assume access to EKS for kubectl
+    EKS_KUBECTL_ROLE_ARN: "arn:aws:iam::086015456585:role/EksCodeBuildKubectlRole"
+    PRIMARY_MANIFEST_DIR: "kube-manifests"
+    EXTRA_MANIFEST_FILE: "notif-deploy.yaml"
+
+phases:
+  install:
+    commands:
+      - echo "Install Phase - Installing kubectl"
+      - curl -sSLo kubectl https://dl.k8s.io/release/v1.34.0/bin/linux/amd64/kubectl
+      - install -m 0755 kubectl /usr/local/bin/kubectl
+      - rm -f kubectl
+
+  pre_build:
+    commands:
+      # Print info about environment setup
+      - echo "Setting up IMAGE_URI and IMAGE_TAG from previous stage..."
+      # List files to verify presence of artifacts
+      - echo "Listing all files in workspace for debugging:"
+      - ls -R .
+      # Source exported variables (IMAGE_URI and IMAGE_TAG)
+      - echo "Sourcing env variables from file"
+      - source ./exported-vars.env
+      - echo "IMAGE_URI=$IMAGE_URI"
+      - echo "IMAGE_TAG=$IMAGE_TAG"
+      # Replace placeholder in Kubernetes YAML with actual image URI and tag
+      - echo "Updating container image in the Kubernetes Deployment YAML file..."
+      - sed -i 's@CONTAINER_IMAGE@'"$IMAGE_URI:$IMAGE_TAG"'@' $PRIMARY_MANIFEST_DIR/05-fastapi-email-deployment.yml
+      - echo "Updated deployment manifest content:"
+      - cat $PRIMARY_MANIFEST_DIR/05-fastapi-email-deployment.yml
+
+  build:
+    commands:
+      # Assume IAM role to gain temporary credentials for kubectl access
+      - echo "Assuming IAM Role to access EKS cluster..."
+      - CREDENTIALS=$(aws sts assume-role --role-arn $EKS_KUBECTL_ROLE_ARN --role-session-name codebuild-kubectl --duration-seconds 900)
+      - export AWS_ACCESS_KEY_ID=$(echo $CREDENTIALS | jq -r '.Credentials.AccessKeyId')
+      - export AWS_SECRET_ACCESS_KEY=$(echo $CREDENTIALS | jq -r '.Credentials.SecretAccessKey')
+      - export AWS_SESSION_TOKEN=$(echo $CREDENTIALS | jq -r '.Credentials.SessionToken')
+      # Setup kubeconfig to interact with the EKS cluster
+      - echo "Updating kubeconfig with EKS cluster credentials..."
+      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_DEFAULT_REGION
+      # Deploy application manifests to EKS
+      - echo "Applying Kubernetes manifests from $PRIMARY_MANIFEST_DIR..."
+      - kubectl apply -f $PRIMARY_MANIFEST_DIR/
+      - |
+        if [ -f "$EXTRA_MANIFEST_FILE" ]; then
+          kubectl create namespace notifications --dry-run=client -o yaml | kubectl apply -f -
+          echo "Applying additional manifest $EXTRA_MANIFEST_FILE..."
+          kubectl apply -f "$EXTRA_MANIFEST_FILE"
+        else
+          echo "No extra manifest file found, skipping."
+        fi
+      # Wait for deployment rollout to complete
+      - echo "Waiting for deployment rollout to complete..."
+      - kubectl rollout status deployment/ses-email-fullstack -n ns-ums --timeout=180s
+      - |
+        if kubectl get deployment notification-microservice -n notifications >/dev/null 2>&1; then
+          echo "Waiting for notification-microservice rollout to complete..."
+          kubectl rollout status deployment/notification-microservice -n notifications --timeout=180s
+        else
+          echo "notification-microservice deployment not found, skipping rollout wait."
+        fi
+
+  post_build:
+    commands:
+      # Verification steps to ensure everything is deployed correctly
+      - echo "Verifying Kubernetes resources created:"
+      - |
+        if [ -f "$HOME/.kube/config" ]; then
+          echo "Pods Status:"
+          kubectl get pods -A -o wide
+          echo "Services Status:"
+          kubectl get svc -A -o wide
+          echo "Ingress Status:"
+          kubectl get ingress -A -o wide
+        else
+          echo "kubeconfig not found, skipping post-build kubectl verification."
+        fi

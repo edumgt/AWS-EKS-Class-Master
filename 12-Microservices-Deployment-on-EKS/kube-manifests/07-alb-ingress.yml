@@ -1,0 +1,25 @@
+# ALB Ingress for the FastAPI + vanilla HTML email app.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ses-email-fullstack-ingress
+  namespace: ns-ums
+  annotations:
+    alb.ingress.kubernetes.io/load-balancer-name: ses-email-fullstack
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ses-email-fullstack-service
+                port:
+                  number: 80
