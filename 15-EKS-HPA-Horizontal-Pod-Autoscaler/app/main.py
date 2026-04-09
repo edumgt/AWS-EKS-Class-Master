@@ -399,6 +399,71 @@ def get_pod_metrics_map() -> Dict[str, Dict[str, int]]:
     return metrics
 
 
+def get_node_metrics_map() -> Dict[str, Dict[str, int]]:
+    metrics = {}
+    try:
+        response = custom_api.list_cluster_custom_object(
+            group="metrics.k8s.io",
+            version="v1beta1",
+            plural="nodes"
+        )
+        for item in response.get("items", []):
+            usage = item.get("usage", {})
+            metrics[item["metadata"]["name"]] = {
+                "cpu_millicores": parse_cpu_to_millicores(usage.get("cpu", "0m")),
+                "memory_mib": parse_memory_to_mib(usage.get("memory", "0Mi"))
+            }
+    except ApiException as exc:
+        logger.warning("Unable to fetch node metrics: %s", exc)
+    return metrics
+
+
+def get_node_ready_status(node: client.V1Node) -> str:
+    for condition in node.status.conditions or []:
+        if condition.type == "Ready":
+            return "Ready" if condition.status == "True" else "NotReady"
+    return "Unknown"
+
+
+def collect_node_rows() -> list[Dict]:
+    nodes = v1.list_node().items
+    node_metrics = get_node_metrics_map()
+    rows = []
+
+    for node in nodes:
+        metric = node_metrics.get(node.metadata.name, {})
+        rows.append({
+            "name": node.metadata.name,
+            "status": get_node_ready_status(node),
+            "instance_type": (node.metadata.labels or {}).get("node.kubernetes.io/instance-type", "-"),
+            "zone": (node.metadata.labels or {}).get("topology.kubernetes.io/zone", "-"),
+            "cpu_millicores": metric.get("cpu_millicores", 0),
+            "memory_mib": metric.get("memory_mib", 0),
+            "pod_capacity": node.status.capacity.get("pods", "-") if node.status and node.status.capacity else "-",
+            "kubelet_version": node.status.node_info.kubelet_version if node.status and node.status.node_info else "-"
+        })
+    return rows
+
+
+def collect_pod_rows() -> list[Dict]:
+    pod_metrics = get_pod_metrics_map()
+    pods = v1.list_namespaced_pod(namespace=NAMESPACE)
+    rows = []
+    for pod in pods.items:
+        metric = pod_metrics.get(pod.metadata.name, {})
+        rows.append({
+            "name": pod.metadata.name,
+            "namespace": pod.metadata.namespace,
+            "status": pod.status.phase,
+            "node": pod.spec.node_name or "-",
+            "ip": pod.status.pod_ip or "-",
+            "cpu_millicores": metric.get("cpu_millicores", 0),
+            "memory_mib": metric.get("memory_mib", 0),
+            "created_at": pod.metadata.creation_timestamp.isoformat() if pod.metadata.creation_timestamp else "-"
+        })
+    return rows
+
+
 def get_disk_usage_for_pod(pod_name: str) -> Dict[str, str]:
     try:
         output = stream(
@@ -916,6 +981,34 @@ def terminate_session_record(session_info: Dict):
 )
 async def admin_usage(request: Request):
     rows = collect_jupyter_usage_rows(request)
+    return {
+        "total": len(rows),
+        "rows": rows
+    }
+
+
+@app.get(
+    "/admin/system/nodes",
+    tags=["Admin"],
+    summary="List cluster nodes",
+    dependencies=[Depends(require_admin_token)]
+)
+async def admin_system_nodes():
+    rows = collect_node_rows()
+    return {
+        "total": len(rows),
+        "rows": rows
+    }
+
+
+@app.get(
+    "/admin/system/pods",
+    tags=["Admin"],
+    summary="List namespace pods",
+    dependencies=[Depends(require_admin_token)]
+)
+async def admin_system_pods():
+    rows = collect_pod_rows()
     return {
         "total": len(rows),
         "rows": rows

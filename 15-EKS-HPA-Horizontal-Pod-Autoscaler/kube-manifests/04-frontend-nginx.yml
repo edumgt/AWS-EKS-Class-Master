@@ -67,153 +67,320 @@ data:
     }
   index.html: |
     <!doctype html>
-    <html lang="ko">
+    <html lang="ko" class="dark">
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Jupyter Access Portal</title>
+      <title>OpenAI Style Jupyter Portal</title>
+      <script>
+        tailwind = window.tailwind || {};
+        tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              colors: {
+                ink: {
+                  50: '#f5f7fb',
+                  100: '#e9edf5',
+                  200: '#d8deea',
+                  300: '#b8c2d6',
+                  400: '#90a0be',
+                  500: '#637392',
+                  600: '#46536d',
+                  700: '#30394c',
+                  800: '#1d2331',
+                  900: '#0f131b'
+                }
+              },
+              boxShadow: {
+                panel: '0 24px 80px rgba(15, 19, 27, 0.18)'
+              }
+            }
+          }
+        };
+      </script>
       <script src="https://cdn.tailwindcss.com"></script>
       <link rel="stylesheet" href="https://uicdn.toast.com/grid/latest/tui-grid.min.css" />
       <script src="https://uicdn.toast.com/grid/latest/tui-grid.min.js"></script>
+      <style>
+        body {
+          font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .tui-grid-container {
+          background: transparent;
+          border: none;
+        }
+        .dark .tui-grid-container,
+        .dark .tui-grid-cell,
+        .dark .tui-grid-header-area,
+        .dark .tui-grid-lside-area,
+        .dark .tui-grid-rside-area {
+          background: #111827;
+          color: #e5e7eb;
+          border-color: #1f2937;
+        }
+        .dark .tui-grid-header-area .tui-grid-cell {
+          background: #0f172a;
+        }
+        .light .tui-grid-container,
+        .light .tui-grid-cell,
+        .light .tui-grid-header-area,
+        .light .tui-grid-lside-area,
+        .light .tui-grid-rside-area {
+          background: #ffffff;
+          color: #0f172a;
+          border-color: #e5e7eb;
+        }
+        .light .tui-grid-header-area .tui-grid-cell {
+          background: #f8fafc;
+        }
+      </style>
     </head>
-    <body class="min-h-screen bg-slate-950 text-slate-100">
-      <div class="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-10">
-        <section id="login-view" class="mx-auto flex min-h-[80vh] w-full max-w-md items-center">
-          <div class="w-full rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-sky-950/30 backdrop-blur">
-            <div class="inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-200">
-              Jupyter Access
+    <body class="min-h-screen bg-white text-slate-900 transition-colors duration-300 dark:bg-[#0b0f14] dark:text-slate-100">
+      <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,163,127,0.10),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(56,189,248,0.10),_transparent_22%)]">
+        <section id="login-view" class="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-6 py-12">
+          <div class="grid w-full max-w-6xl gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+            <div class="hidden rounded-[2rem] border border-slate-200/80 bg-white/85 p-10 shadow-panel backdrop-blur dark:border-white/10 dark:bg-white/5 lg:block">
+              <div class="inline-flex rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">
+                OpenAI Style Workspace
+              </div>
+              <h1 class="mt-6 text-5xl font-semibold tracking-tight text-slate-950 dark:text-white">Jupyter access, calmly organized.</h1>
+              <p class="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
+                좌측 메뉴 중심의 포털로 세션 운영과 시스템 상태를 분리했습니다. 관리자 화면은 세션 관리와 시스템 관리로 나뉘며, 사용자 화면은 가장 빠르게 Jupyter Lab 진입에 집중합니다.
+              </p>
+              <div class="mt-8 grid gap-4 sm:grid-cols-2">
+                <div class="rounded-3xl border border-slate-200 bg-slate-50/90 p-5 dark:border-white/10 dark:bg-white/5">
+                  <div class="text-sm font-semibold text-slate-900 dark:text-white">Session Control</div>
+                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">대기열, 준비 상태, 실행 링크를 한 흐름 안에서 확인합니다.</p>
+                </div>
+                <div class="rounded-3xl border border-slate-200 bg-slate-50/90 p-5 dark:border-white/10 dark:bg-white/5">
+                  <div class="text-sm font-semibold text-slate-900 dark:text-white">System Console</div>
+                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">노드와 파드 상태를 시스템 관리 메뉴에서 바로 조회합니다.</p>
+                </div>
+              </div>
             </div>
-            <h1 class="mt-5 text-4xl font-black tracking-tight text-white">로그인</h1>
-            <p class="mt-3 text-sm leading-6 text-slate-300">
-              일반 사용자는 원하는 아이디와 비밀번호 <span class="font-bold text-sky-300">123456</span> 으로 로그인합니다.
-              관리자는 <span class="font-bold text-rose-300">admin / 123456</span> 계정으로 접속합니다.
-            </p>
-            <form id="login-form" class="mt-8 space-y-4">
-              <div>
-                <label class="mb-2 block text-sm font-medium text-slate-200">아이디</label>
-                <input id="login-username" type="text" placeholder="test111 또는 admin" class="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-sky-400" required />
+            <div class="rounded-[2rem] border border-slate-200/80 bg-white/90 p-8 shadow-panel backdrop-blur dark:border-white/10 dark:bg-[#11161f]/85">
+              <div class="flex items-center justify-between">
+                <div class="inline-flex rounded-full border border-slate-300/80 bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  Sign In
+                </div>
+                <button id="theme-toggle-login" type="button" class="rounded-full border border-slate-300/80 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10">
+                  Theme
+                </button>
               </div>
-              <div>
-                <label class="mb-2 block text-sm font-medium text-slate-200">비밀번호</label>
-                <input id="login-password" type="password" value="123456" class="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-sky-400" required />
-              </div>
-              <button type="submit" class="w-full rounded-2xl bg-sky-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-sky-300">
-                포털 입장
-              </button>
-            </form>
-            <div id="login-banner" class="mt-5 hidden rounded-2xl border px-4 py-3 text-sm"></div>
+              <h2 class="mt-8 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">Portal login</h2>
+              <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                일반 사용자는 원하는 아이디와 비밀번호 <span class="font-semibold text-emerald-600 dark:text-emerald-300">123456</span>으로 로그인합니다.
+                관리자 계정은 <span class="font-semibold text-slate-900 dark:text-white">admin / 123456</span> 입니다.
+              </p>
+              <form id="login-form" class="mt-8 space-y-4">
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">아이디</label>
+                  <input id="login-username" type="text" placeholder="test111 또는 admin" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 dark:border-white/10 dark:bg-white/5 dark:text-white" required />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">비밀번호</label>
+                  <input id="login-password" type="password" value="123456" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 dark:border-white/10 dark:bg-white/5 dark:text-white" required />
+                </div>
+                <button type="submit" class="w-full rounded-2xl bg-[#10a37f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0e8c6d]">
+                  포털 입장
+                </button>
+              </form>
+              <div id="login-banner" class="mt-5 hidden rounded-2xl border px-4 py-3 text-sm"></div>
+            </div>
           </div>
         </section>
 
-        <section id="app-view" class="hidden">
-          <header class="mb-8 flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div id="portal-pill" class="inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]"></div>
-              <h2 id="welcome-title" class="mt-4 text-3xl font-black text-white"></h2>
-              <p id="welcome-copy" class="mt-2 max-w-2xl text-sm text-slate-300"></p>
-            </div>
-            <div class="flex items-center gap-3">
-              <span id="login-user-chip" class="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200"></span>
-              <button id="logout-button" type="button" class="rounded-2xl border border-white/15 px-4 py-2 text-sm font-bold text-slate-200 transition hover:bg-white/10">로그아웃</button>
-            </div>
-          </header>
-
-          <section id="user-view" class="hidden grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-            <article class="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-              <h3 class="text-xl font-black text-white">내 Jupyter 세션</h3>
-              <p class="mt-2 text-sm text-slate-300">로그인한 아이디로 세션을 만들고, 준비가 끝나면 바로 Jupyter Lab을 엽니다.</p>
-              <form id="session-form" class="mt-6 space-y-4">
-                <div>
-                  <label class="mb-2 block text-sm font-medium text-slate-200">사용자 ID</label>
-                  <input id="userId" type="text" class="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white" readonly />
-                </div>
-                <div class="flex flex-wrap gap-3">
-                  <button type="submit" class="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-black text-slate-950">세션 생성</button>
-                  <button id="launch-button" type="button" disabled class="rounded-2xl border border-sky-400/40 px-5 py-3 text-sm font-black text-sky-200 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500">Jupyter Lab 열기</button>
-                </div>
-              </form>
-              <div id="status-banner" class="mt-6 hidden rounded-2xl border px-4 py-3 text-sm"></div>
-              <div id="waiting-panel" class="mt-6 hidden rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-amber-100">
-                <div class="flex items-center gap-3">
-                  <div class="flex h-10 w-10 items-center justify-center rounded-full border border-amber-300/40 bg-amber-300/10">
-                    <svg class="h-5 w-5 animate-spin text-amber-200" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"></circle>
-                      <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <div class="text-sm font-semibold">대기 또는 준비 중</div>
-                    <div id="waiting-copy" class="text-xs text-amber-100/80">세션이 준비되면 실행 버튼이 활성화됩니다.</div>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article class="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6">
-              <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-xl font-black text-white">세션 상태</h3>
-                <span id="session-state" class="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">idle</span>
-              </div>
-              <div class="space-y-4 text-sm">
-                <div>
-                  <div class="mb-1 text-slate-400">User ID</div>
-                  <div id="result-user" class="rounded-2xl bg-slate-950 px-4 py-3 text-slate-200">-</div>
-                </div>
-                <div>
-                  <div class="mb-1 text-slate-400">Session ID</div>
-                  <div id="result-session" class="rounded-2xl bg-slate-950 px-4 py-3 font-mono text-sky-300">-</div>
-                </div>
-                <div>
-                  <div class="mb-1 text-slate-400">Launch URL</div>
-                  <a id="result-launch" href="#" target="_blank" rel="noreferrer" class="block break-all rounded-2xl bg-slate-950 px-4 py-3 text-sky-300 underline underline-offset-4">-</a>
-                </div>
-                <div>
-                  <div class="mb-1 text-slate-400">Status URL</div>
-                  <a id="result-status" href="#" target="_blank" rel="noreferrer" class="block break-all rounded-2xl bg-slate-950 px-4 py-3 text-slate-300">-</a>
-                </div>
-                <div>
-                  <div class="mb-1 text-slate-400">Queue</div>
-                  <div id="queue-info" class="rounded-2xl bg-slate-950 px-4 py-3 text-slate-300">-</div>
-                </div>
-              </div>
-            </article>
-          </section>
-
-          <section id="admin-view" class="hidden rounded-[2rem] border border-white/10 bg-slate-900/80 p-6">
-            <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <section id="app-shell" class="hidden">
+          <div id="sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-950/50 backdrop-blur-sm lg:hidden"></div>
+          <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-80 -translate-x-full border-r border-slate-200 bg-white/95 px-5 py-6 shadow-panel transition-transform duration-300 dark:border-white/10 dark:bg-[#0f141c]/95 lg:translate-x-0">
+            <div class="flex items-center justify-between">
               <div>
-                <div class="inline-flex rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-rose-200">Admin Console</div>
-                <h3 class="mt-3 text-2xl font-black text-white">전체 사용자 Jupyter 운영 현황</h3>
-                <p class="mt-2 text-sm text-slate-300">TUI Grid에서 사용자 세션 중지와 Pod 삭제를 바로 수행할 수 있습니다.</p>
+                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Workspace</div>
+                <div class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">Jupyter Portal</div>
               </div>
-              <div class="flex gap-3">
-                <button id="refresh-admin" type="button" class="rounded-2xl border border-rose-400/40 px-4 py-2 text-sm font-bold text-rose-200 transition hover:bg-rose-400/10">현황 새로고침</button>
+              <button id="close-sidebar" type="button" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 lg:hidden">
+                닫기
+              </button>
+            </div>
+
+            <div class="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
+              <div class="text-xs text-slate-500 dark:text-slate-400">Signed in</div>
+              <div id="login-user-chip" class="mt-2 text-sm font-semibold text-slate-900 dark:text-white"></div>
+            </div>
+
+            <nav class="mt-8 space-y-2">
+              <button data-view="user-home" class="nav-link hidden w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/5">
+                사용자 홈
+              </button>
+              <button data-view="admin-sessions" class="nav-link hidden w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/5">
+                세션 관리
+              </button>
+              <button data-view="admin-system" class="nav-link hidden w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/5">
+                시스템 관리
+              </button>
+            </nav>
+
+            <div class="mt-8 space-y-3">
+              <button id="theme-toggle-app" type="button" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10">
+                다크 / 라이트 전환
+              </button>
+              <button id="logout-button" type="button" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10">
+                로그아웃
+              </button>
+            </div>
+          </aside>
+
+          <main class="min-h-screen px-4 py-4 lg:pl-[22rem]">
+            <div class="rounded-[2rem] border border-slate-200 bg-white/80 shadow-panel backdrop-blur dark:border-white/10 dark:bg-[#0c1117]/80">
+              <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-white/10">
+                <div class="flex items-center gap-3">
+                  <button id="open-sidebar" type="button" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 lg:hidden">
+                    메뉴
+                  </button>
+                  <div>
+                    <div id="portal-pill" class="inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]"></div>
+                    <h2 id="welcome-title" class="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white"></h2>
+                  </div>
+                </div>
+                <p id="welcome-copy" class="hidden max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400 md:block"></p>
+              </header>
+
+              <div class="p-5">
+                <section id="user-home-view" class="hidden grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+                  <article class="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-6 dark:border-white/10 dark:bg-white/5">
+                    <h3 class="text-xl font-semibold text-slate-950 dark:text-white">내 Jupyter 세션</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">로그인한 계정으로 세션을 생성하고, 준비되면 바로 Lab을 엽니다.</p>
+                    <form id="session-form" class="mt-6 space-y-4">
+                      <div>
+                        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">사용자 ID</label>
+                        <input id="userId" type="text" readonly class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                      </div>
+                      <div class="flex flex-wrap gap-3">
+                        <button type="submit" class="rounded-2xl bg-[#10a37f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0e8c6d]">세션 생성</button>
+                        <button id="launch-button" type="button" disabled class="rounded-2xl border border-emerald-400/40 px-5 py-3 text-sm font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400 dark:text-emerald-300 dark:disabled:border-white/10 dark:disabled:text-slate-500">Jupyter Lab 열기</button>
+                      </div>
+                    </form>
+                    <div id="status-banner" class="mt-6 hidden rounded-2xl border px-4 py-3 text-sm"></div>
+                    <div id="waiting-panel" class="mt-6 hidden rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100">
+                      <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full border border-amber-300 bg-white/60 dark:border-amber-300/40 dark:bg-amber-300/10">
+                          <svg class="h-5 w-5 animate-spin text-amber-600 dark:text-amber-200" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"></circle>
+                            <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+                          </svg>
+                        </div>
+                        <div>
+                          <div class="text-sm font-semibold">세션 준비 중</div>
+                          <div id="waiting-copy" class="text-xs text-amber-700 dark:text-amber-100/80">세션이 준비되면 실행 버튼이 활성화됩니다.</div>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+
+                  <article class="rounded-[1.75rem] border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#0f1722]">
+                    <div class="mb-4 flex items-center justify-between">
+                      <h3 class="text-xl font-semibold text-slate-950 dark:text-white">세션 상태</h3>
+                      <span id="session-state" class="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">idle</span>
+                    </div>
+                    <div class="space-y-4 text-sm">
+                      <div>
+                        <div class="mb-1 text-slate-500 dark:text-slate-400">User ID</div>
+                        <div id="result-user" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100">-</div>
+                      </div>
+                      <div>
+                        <div class="mb-1 text-slate-500 dark:text-slate-400">Session ID</div>
+                        <div id="result-session" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-emerald-300">-</div>
+                      </div>
+                      <div>
+                        <div class="mb-1 text-slate-500 dark:text-slate-400">Launch URL</div>
+                        <a id="result-launch" href="#" target="_blank" rel="noreferrer" class="block break-all rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-emerald-700 underline underline-offset-4 dark:border-white/10 dark:bg-white/5 dark:text-emerald-300">-</a>
+                      </div>
+                      <div>
+                        <div class="mb-1 text-slate-500 dark:text-slate-400">Status URL</div>
+                        <a id="result-status" href="#" target="_blank" rel="noreferrer" class="block break-all rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">-</a>
+                      </div>
+                      <div>
+                        <div class="mb-1 text-slate-500 dark:text-slate-400">Queue</div>
+                        <div id="queue-info" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">-</div>
+                      </div>
+                    </div>
+                  </article>
+                </section>
+
+                <section id="admin-sessions-view" class="hidden space-y-5">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 class="text-xl font-semibold text-slate-950 dark:text-white">세션 관리</h3>
+                      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">사용자 세션 현황을 보고 즉시 제어합니다.</p>
+                    </div>
+                    <button id="refresh-admin" type="button" class="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10">
+                      세션 새로고침
+                    </button>
+                  </div>
+                  <div id="admin-banner" class="hidden rounded-2xl border px-4 py-3 text-sm"></div>
+                  <div class="rounded-[1.5rem] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#101722]">
+                    <div class="mb-3 flex items-center justify-between">
+                      <div class="text-sm font-semibold text-slate-900 dark:text-white">Session Grid</div>
+                      <div id="admin-summary" class="text-xs text-slate-500 dark:text-slate-400">데이터를 불러오는 중입니다.</div>
+                    </div>
+                    <div id="admin-grid" class="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10"></div>
+                  </div>
+                </section>
+
+                <section id="admin-system-view" class="hidden space-y-5">
+                  <div>
+                    <h3 class="text-xl font-semibold text-slate-950 dark:text-white">시스템 관리</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">노드 상태와 전체 파드 상태를 확인합니다.</p>
+                  </div>
+                  <div class="grid gap-5 xl:grid-cols-2">
+                    <div class="rounded-[1.5rem] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#101722]">
+                      <div class="mb-3 flex items-center justify-between">
+                        <div class="text-sm font-semibold text-slate-900 dark:text-white">Node Status</div>
+                        <button id="refresh-nodes" type="button" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">새로고침</button>
+                      </div>
+                      <div id="nodes-summary" class="mb-3 text-xs text-slate-500 dark:text-slate-400">노드 데이터를 불러오는 중입니다.</div>
+                      <div id="nodes-grid" class="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10"></div>
+                    </div>
+                    <div class="rounded-[1.5rem] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#101722]">
+                      <div class="mb-3 flex items-center justify-between">
+                        <div class="text-sm font-semibold text-slate-900 dark:text-white">Pod Status</div>
+                        <button id="refresh-pods" type="button" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">새로고침</button>
+                      </div>
+                      <div id="pods-summary" class="mb-3 text-xs text-slate-500 dark:text-slate-400">파드 데이터를 불러오는 중입니다.</div>
+                      <div id="pods-grid" class="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10"></div>
+                    </div>
+                  </div>
+                </section>
               </div>
             </div>
-            <div id="admin-banner" class="mb-4 hidden rounded-2xl border px-4 py-3 text-sm"></div>
-            <div class="mb-3 flex items-center justify-between">
-              <div class="text-sm font-semibold text-slate-200">실시간 Grid</div>
-              <div id="admin-summary" class="text-xs text-slate-400">데이터를 불러오는 중입니다.</div>
-            </div>
-            <div id="admin-grid" class="overflow-hidden rounded-xl border border-slate-800"></div>
-          </section>
+          </main>
         </section>
       </div>
 
       <script>
+        const root = document.documentElement;
         const loginView = document.getElementById("login-view");
-        const appView = document.getElementById("app-view");
+        const appShell = document.getElementById("app-shell");
         const loginForm = document.getElementById("login-form");
         const loginBanner = document.getElementById("login-banner");
         const loginUsername = document.getElementById("login-username");
         const loginPassword = document.getElementById("login-password");
+        const themeToggleLogin = document.getElementById("theme-toggle-login");
+        const themeToggleApp = document.getElementById("theme-toggle-app");
+        const sidebar = document.getElementById("sidebar");
+        const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+        const openSidebar = document.getElementById("open-sidebar");
+        const closeSidebar = document.getElementById("close-sidebar");
         const logoutButton = document.getElementById("logout-button");
         const portalPill = document.getElementById("portal-pill");
         const welcomeTitle = document.getElementById("welcome-title");
         const welcomeCopy = document.getElementById("welcome-copy");
         const loginUserChip = document.getElementById("login-user-chip");
-        const userView = document.getElementById("user-view");
-        const adminView = document.getElementById("admin-view");
+        const userHomeView = document.getElementById("user-home-view");
+        const adminSessionsView = document.getElementById("admin-sessions-view");
+        const adminSystemView = document.getElementById("admin-system-view");
+        const navLinks = Array.from(document.querySelectorAll(".nav-link"));
         const form = document.getElementById("session-form");
         const launchButton = document.getElementById("launch-button");
         const stateEl = document.getElementById("session-state");
@@ -229,6 +396,10 @@ data:
         const adminBanner = document.getElementById("admin-banner");
         const adminSummary = document.getElementById("admin-summary");
         const refreshAdmin = document.getElementById("refresh-admin");
+        const refreshNodes = document.getElementById("refresh-nodes");
+        const refreshPods = document.getElementById("refresh-pods");
+        const nodesSummary = document.getElementById("nodes-summary");
+        const podsSummary = document.getElementById("pods-summary");
 
         let authToken = "";
         let authRole = "";
@@ -237,22 +408,41 @@ data:
         let currentSessionId = "";
         let pollTimer = null;
         let adminGrid = null;
+        let nodesGrid = null;
+        let podsGrid = null;
+
+        function setTheme(mode) {
+          root.classList.toggle("dark", mode === "dark");
+          root.classList.toggle("light", mode !== "dark");
+          localStorage.setItem("portal-theme", mode);
+        }
+
+        function toggleTheme() {
+          setTheme(root.classList.contains("dark") ? "light" : "dark");
+        }
+
+        function openSidebarPanel() {
+          sidebar.classList.remove("-translate-x-full");
+          sidebarBackdrop.classList.remove("hidden");
+        }
+
+        function closeSidebarPanel() {
+          sidebar.classList.add("-translate-x-full");
+          sidebarBackdrop.classList.add("hidden");
+        }
 
         function setMessage(el, message, kind) {
-          el.classList.remove("hidden", "border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100", "border-rose-400/40", "bg-rose-400/10", "text-rose-100");
+          el.classList.remove("hidden", "border-emerald-300", "bg-emerald-50", "text-emerald-900", "border-rose-300", "bg-rose-50", "text-rose-900", "dark:border-emerald-400/30", "dark:bg-emerald-400/10", "dark:text-emerald-100", "dark:border-rose-400/30", "dark:bg-rose-400/10", "dark:text-rose-100");
           if (kind === "success") {
-            el.classList.add("border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100");
+            el.classList.add("border-emerald-300", "bg-emerald-50", "text-emerald-900", "dark:border-emerald-400/30", "dark:bg-emerald-400/10", "dark:text-emerald-100");
           } else {
-            el.classList.add("border-rose-400/40", "bg-rose-400/10", "text-rose-100");
+            el.classList.add("border-rose-300", "bg-rose-50", "text-rose-900", "dark:border-rose-400/30", "dark:bg-rose-400/10", "dark:text-rose-100");
           }
           el.textContent = message;
         }
 
         function authHeaders() {
-          return {
-            accept: "application/json",
-            authorization: `Bearer ${authToken}`
-          };
+          return { accept: "application/json", authorization: `Bearer ${authToken}` };
         }
 
         function setState(text) {
@@ -273,27 +463,51 @@ data:
 
         function formatWait(seconds) {
           if (!seconds) return "즉시 실행 가능";
-          const minutes = Math.ceil(seconds / 60);
-          return `예상 대기 ${minutes}분`;
+          return `예상 대기 ${Math.ceil(seconds / 60)}분`;
+        }
+
+        function setActiveNav(view) {
+          navLinks.forEach((button) => {
+            const active = button.dataset.view === view;
+            button.classList.toggle("bg-slate-100", active);
+            button.classList.toggle("text-slate-950", active);
+            button.classList.toggle("dark:bg-white/10", active);
+            button.classList.toggle("dark:text-white", active);
+          });
+        }
+
+        function showView(view) {
+          userHomeView.classList.add("hidden");
+          adminSessionsView.classList.add("hidden");
+          adminSystemView.classList.add("hidden");
+          if (view === "user-home") userHomeView.classList.remove("hidden");
+          if (view === "admin-sessions") adminSessionsView.classList.remove("hidden");
+          if (view === "admin-system") adminSystemView.classList.remove("hidden");
+          setActiveNav(view);
+          closeSidebarPanel();
         }
 
         function activateUserView() {
-          portalPill.className = "inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-sky-200";
-          portalPill.textContent = "User Portal";
-          welcomeTitle.textContent = "내 Jupyter 세션 실행";
-          welcomeCopy.textContent = "로그인한 사용자 계정으로 세션을 생성하고 준비 상태를 확인합니다.";
-          userView.classList.remove("hidden");
-          adminView.classList.add("hidden");
+          portalPill.className = "inline-flex rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-300";
+          portalPill.textContent = "User Workspace";
+          welcomeTitle.textContent = "내 Jupyter 세션";
+          welcomeCopy.textContent = "세션을 만들고 준비 상태와 대기 순번을 확인한 뒤 Jupyter Lab으로 이동합니다.";
+          navLinks.find((item) => item.dataset.view === "user-home").classList.remove("hidden");
+          navLinks.find((item) => item.dataset.view === "admin-sessions").classList.add("hidden");
+          navLinks.find((item) => item.dataset.view === "admin-system").classList.add("hidden");
           userIdInput.value = authUsername;
+          showView("user-home");
         }
 
         function activateAdminView() {
-          portalPill.className = "inline-flex rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-rose-200";
-          portalPill.textContent = "Admin Portal";
-          welcomeTitle.textContent = "관리자 운영 콘솔";
-          welcomeCopy.textContent = "사용자 세션 현황을 보고, 세션 중지와 Pod 삭제를 직접 수행할 수 있습니다.";
-          adminView.classList.remove("hidden");
-          userView.classList.add("hidden");
+          portalPill.className = "inline-flex rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300";
+          portalPill.textContent = "Admin Workspace";
+          welcomeTitle.textContent = "운영 콘솔";
+          welcomeCopy.textContent = "세션 운영과 클러스터 시스템 상태를 좌측 메뉴에서 전환하며 관리합니다.";
+          navLinks.find((item) => item.dataset.view === "user-home").classList.add("hidden");
+          navLinks.find((item) => item.dataset.view === "admin-sessions").classList.remove("hidden");
+          navLinks.find((item) => item.dataset.view === "admin-system").classList.remove("hidden");
+          showView("admin-sessions");
         }
 
         async function pollSessionStatus(sessionId) {
@@ -327,7 +541,7 @@ data:
           if (adminGrid) return adminGrid;
           adminGrid = new tui.Grid({
             el: document.getElementById("admin-grid"),
-            bodyHeight: 520,
+            bodyHeight: 460,
             scrollX: true,
             scrollY: true,
             rowHeaders: ["rowNum"],
@@ -339,25 +553,69 @@ data:
               { header: "CPU(m)", name: "cpu_millicores", minWidth: 85, align: "right" },
               { header: "Mem(Mi)", name: "memory_mib", minWidth: 90, align: "right" },
               { header: "Disk %", name: "disk_usage_percent", minWidth: 80, align: "right" },
-              { header: "Pod", name: "pod_name", minWidth: 210 },
-              { header: "PVC", name: "pvc_name", minWidth: 170 },
+              { header: "Pod", name: "pod_name", minWidth: 200 },
+              { header: "PVC", name: "pvc_name", minWidth: 160 },
               {
                 header: "Actions",
                 name: "actions",
-                minWidth: 220,
+                minWidth: 210,
                 formatter({ row }) {
-                  return `
-                    <div class="flex gap-2 py-1">
-                      <button class="admin-stop rounded-lg bg-amber-400 px-2 py-1 text-xs font-bold text-slate-950" data-session="${row.session_id}">세션 중지</button>
-                      <button class="admin-delete rounded-lg bg-rose-400 px-2 py-1 text-xs font-bold text-slate-950" data-session="${row.session_id}">Pod 삭제</button>
-                    </div>
-                  `;
+                  return `<div class="flex gap-2 py-1">
+                    <button class="admin-stop rounded-xl bg-amber-400 px-2 py-1 text-xs font-semibold text-slate-950" data-session="${row.session_id}">세션 중지</button>
+                    <button class="admin-delete rounded-xl bg-rose-400 px-2 py-1 text-xs font-semibold text-slate-950" data-session="${row.session_id}">Pod 삭제</button>
+                  </div>`;
                 }
               }
             ],
             data: []
           });
           return adminGrid;
+        }
+
+        function ensureNodesGrid() {
+          if (nodesGrid) return nodesGrid;
+          nodesGrid = new tui.Grid({
+            el: document.getElementById("nodes-grid"),
+            bodyHeight: 420,
+            scrollX: true,
+            scrollY: true,
+            rowHeaders: ["rowNum"],
+            columns: [
+              { header: "Node", name: "name", minWidth: 220 },
+              { header: "Status", name: "status", minWidth: 90 },
+              { header: "Type", name: "instance_type", minWidth: 120 },
+              { header: "Zone", name: "zone", minWidth: 110 },
+              { header: "CPU(m)", name: "cpu_millicores", minWidth: 85, align: "right" },
+              { header: "Mem(Mi)", name: "memory_mib", minWidth: 90, align: "right" },
+              { header: "Pods", name: "pod_capacity", minWidth: 70, align: "right" },
+              { header: "Kubelet", name: "kubelet_version", minWidth: 120 }
+            ],
+            data: []
+          });
+          return nodesGrid;
+        }
+
+        function ensurePodsGrid() {
+          if (podsGrid) return podsGrid;
+          podsGrid = new tui.Grid({
+            el: document.getElementById("pods-grid"),
+            bodyHeight: 420,
+            scrollX: true,
+            scrollY: true,
+            rowHeaders: ["rowNum"],
+            columns: [
+              { header: "Pod", name: "name", minWidth: 220 },
+              { header: "Namespace", name: "namespace", minWidth: 110 },
+              { header: "Status", name: "status", minWidth: 100 },
+              { header: "Node", name: "node", minWidth: 200 },
+              { header: "IP", name: "ip", minWidth: 120 },
+              { header: "CPU(m)", name: "cpu_millicores", minWidth: 85, align: "right" },
+              { header: "Mem(Mi)", name: "memory_mib", minWidth: 90, align: "right" },
+              { header: "Created", name: "created_at", minWidth: 180 }
+            ],
+            data: []
+          });
+          return podsGrid;
         }
 
         async function loadAdminUsage() {
@@ -367,10 +625,34 @@ data:
             const data = await response.json();
             ensureAdminGrid().resetData(data.rows || []);
             adminSummary.textContent = `총 ${data.total}개 세션`;
-            setMessage(adminBanner, "관리자 현황 데이터를 불러왔습니다.", "success");
+            setMessage(adminBanner, "세션 관리 데이터를 불러왔습니다.", "success");
           } catch (error) {
             adminSummary.textContent = "조회 실패";
             setMessage(adminBanner, `관리자 조회 실패: ${error.message}`, "error");
+          }
+        }
+
+        async function loadSystemNodes() {
+          try {
+            const response = await fetch("/api/admin/system/nodes", { headers: authHeaders() });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            ensureNodesGrid().resetData(data.rows || []);
+            nodesSummary.textContent = `총 ${data.total}개 노드`;
+          } catch (error) {
+            nodesSummary.textContent = `노드 조회 실패: ${error.message}`;
+          }
+        }
+
+        async function loadSystemPods() {
+          try {
+            const response = await fetch("/api/admin/system/pods", { headers: authHeaders() });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            ensurePodsGrid().resetData(data.rows || []);
+            podsSummary.textContent = `총 ${data.total}개 파드`;
+          } catch (error) {
+            podsSummary.textContent = `파드 조회 실패: ${error.message}`;
           }
         }
 
@@ -382,6 +664,7 @@ data:
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             setMessage(adminBanner, `${sessionId} 작업이 완료되었습니다.`, "success");
             await loadAdminUsage();
+            await loadSystemPods();
           } catch (error) {
             setMessage(adminBanner, `관리 작업 실패: ${error.message}`, "error");
           }
@@ -394,6 +677,23 @@ data:
           if (deleteButton) await performAdminAction("delete", deleteButton.dataset.session);
         });
 
+        navLinks.forEach((button) => {
+          button.addEventListener("click", async () => {
+            showView(button.dataset.view);
+            if (button.dataset.view === "admin-sessions") await loadAdminUsage();
+            if (button.dataset.view === "admin-system") {
+              await loadSystemNodes();
+              await loadSystemPods();
+            }
+          });
+        });
+
+        themeToggleLogin.addEventListener("click", toggleTheme);
+        themeToggleApp.addEventListener("click", toggleTheme);
+        openSidebar.addEventListener("click", openSidebarPanel);
+        closeSidebar.addEventListener("click", closeSidebarPanel);
+        sidebarBackdrop.addEventListener("click", closeSidebarPanel);
+
         launchButton.addEventListener("click", () => {
           if (currentLaunchUrl) window.open(currentLaunchUrl, "_blank", "noopener,noreferrer");
         });
@@ -405,12 +705,15 @@ data:
           currentLaunchUrl = "";
           currentSessionId = "";
           stopPolling();
-          appView.classList.add("hidden");
+          appShell.classList.add("hidden");
           loginView.classList.remove("hidden");
           loginPassword.value = "123456";
+          closeSidebarPanel();
         });
 
         refreshAdmin.addEventListener("click", loadAdminUsage);
+        refreshNodes.addEventListener("click", loadSystemNodes);
+        refreshPods.addEventListener("click", loadSystemPods);
 
         loginForm.addEventListener("submit", async (event) => {
           event.preventDefault();
@@ -427,7 +730,7 @@ data:
             authUsername = data.username;
             loginUserChip.textContent = `${authUsername} (${authRole})`;
             loginView.classList.add("hidden");
-            appView.classList.remove("hidden");
+            appShell.classList.remove("hidden");
             if (authRole === "admin") {
               activateAdminView();
               await loadAdminUsage();
@@ -480,6 +783,9 @@ data:
             setMessage(banner, `세션 생성 실패: ${error.message}`, "error");
           }
         });
+
+        setTheme(localStorage.getItem("portal-theme") || "dark");
+        root.classList.add(root.classList.contains("dark") ? "dark" : "light");
       </script>
     </body>
     </html>
