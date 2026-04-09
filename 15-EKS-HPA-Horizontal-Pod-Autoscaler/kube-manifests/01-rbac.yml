@@ -1,0 +1,37 @@
+---
+# ServiceAccount for FastAPI Backend
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jupyter-manager-sa
+  namespace: default
+---
+# ClusterRole - Pod와 Service 관리 권한
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jupyter-manager-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/status"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch"]
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jupyter-manager-binding
+subjects:
+  - kind: ServiceAccount
+    name: jupyter-manager-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: jupyter-manager-role
+  apiGroup: rbac.authorization.k8s.io
