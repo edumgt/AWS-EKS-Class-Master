@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyter-redis
+  labels:
+    app: jupyter-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyter-redis
+  template:
+    metadata:
+      labels:
+        app: jupyter-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        args:
+        - redis-server
+        - --appendonly
+        - "yes"
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 15
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyter-redis-service
+  labels:
+    app: jupyter-redis
+spec:
+  selector:
+    app: jupyter-redis
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379

@@ -71,232 +71,197 @@ data:
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Jupyter Session Launcher</title>
+      <title>Jupyter Access Portal</title>
       <script src="https://cdn.tailwindcss.com"></script>
       <link rel="stylesheet" href="https://uicdn.toast.com/grid/latest/tui-grid.min.css" />
       <script src="https://uicdn.toast.com/grid/latest/tui-grid.min.js"></script>
     </head>
     <body class="min-h-screen bg-slate-950 text-slate-100">
-      <div class="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-10">
-        <header class="mb-10">
-          <div class="inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">
-            Jupyter Session Frontend
-          </div>
-          <h1 class="mt-4 text-4xl font-black tracking-tight text-white sm:text-5xl">
-            User ID로 세션을 만들고 바로 Jupyter Lab 실행
-          </h1>
-          <p class="mt-3 max-w-2xl text-sm text-slate-300 sm:text-base">
-            이 화면은 Backend API를 호출해 session_id를 생성하고, 생성된 session_id로
-            <code class="rounded bg-slate-800 px-1 py-0.5 text-cyan-300">/lab?sessionid=xxxx</code>
-            링크를 바로 실행합니다.
-          </p>
-        </header>
-
-        <main class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <section class="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-cyan-950/20">
-            <div class="mb-6">
-              <h2 class="text-xl font-bold text-white">세션 생성</h2>
-              <p class="mt-2 text-sm text-slate-300">
-                사용자 ID를 입력하면 Backend API
-                <code class="rounded bg-slate-800 px-1 py-0.5 text-cyan-300">POST /users/{user_id}/session</code>
-                을 호출합니다.
-              </p>
+      <div class="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-10">
+        <section id="login-view" class="mx-auto flex min-h-[80vh] w-full max-w-md items-center">
+          <div class="w-full rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-sky-950/30 backdrop-blur">
+            <div class="inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-200">
+              Jupyter Access
             </div>
-
-            <form id="session-form" class="space-y-4">
+            <h1 class="mt-5 text-4xl font-black tracking-tight text-white">로그인</h1>
+            <p class="mt-3 text-sm leading-6 text-slate-300">
+              일반 사용자는 원하는 아이디와 비밀번호 <span class="font-bold text-sky-300">123456</span> 으로 로그인합니다.
+              관리자는 <span class="font-bold text-rose-300">admin / 123456</span> 계정으로 접속합니다.
+            </p>
+            <form id="login-form" class="mt-8 space-y-4">
               <div>
-                <label for="userId" class="mb-2 block text-sm font-medium text-slate-200">User ID</label>
-                <input
-                  id="userId"
-                  name="userId"
-                  type="text"
-                  placeholder="abc123"
-                  class="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-base text-white outline-none ring-0 transition focus:border-cyan-400"
-                  required
-                />
+                <label class="mb-2 block text-sm font-medium text-slate-200">아이디</label>
+                <input id="login-username" type="text" placeholder="test111 또는 admin" class="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-sky-400" required />
               </div>
-
-              <div class="flex flex-wrap gap-3">
-                <button
-                  type="submit"
-                  class="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
-                >
-                  세션 생성
-                </button>
-                <button
-                  id="launch-button"
-                  type="button"
-                  class="rounded-2xl border border-cyan-400/40 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
-                  disabled
-                >
-                  Jupyter Lab 열기
-                </button>
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-200">비밀번호</label>
+                <input id="login-password" type="password" value="123456" class="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-sky-400" required />
               </div>
+              <button type="submit" class="w-full rounded-2xl bg-sky-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-sky-300">
+                포털 입장
+              </button>
             </form>
+            <div id="login-banner" class="mt-5 hidden rounded-2xl border px-4 py-3 text-sm"></div>
+          </div>
+        </section>
 
-            <div id="status-banner" class="mt-6 hidden rounded-2xl border px-4 py-3 text-sm"></div>
-            <div id="waiting-panel" class="mt-6 hidden rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-amber-100">
-              <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full border border-amber-300/40 bg-amber-300/10">
-                  <svg class="h-5 w-5 animate-spin text-amber-200" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"></circle>
-                    <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-                  </svg>
-                </div>
-                <div>
-                  <div class="text-sm font-semibold">Jupyter Lab 준비 중</div>
-                  <div class="text-xs text-amber-100/80">세션이 running 상태가 되면 버튼이 자동으로 활성화됩니다.</div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-            <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-xl font-bold text-white">세션 결과</h2>
-              <span id="session-state" class="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">
-                waiting
-              </span>
-            </div>
-
-            <div class="space-y-4 text-sm">
-              <div>
-                <div class="mb-1 text-slate-400">User ID</div>
-                <div id="result-user" class="rounded-2xl bg-slate-950 px-4 py-3 text-slate-200">-</div>
-              </div>
-              <div>
-                <div class="mb-1 text-slate-400">Session ID</div>
-                <div id="result-session" class="rounded-2xl bg-slate-950 px-4 py-3 font-mono text-cyan-300">-</div>
-              </div>
-              <div>
-                <div class="mb-1 text-slate-400">Launch URL</div>
-                <a id="result-launch" href="#" target="_blank" rel="noreferrer" class="block break-all rounded-2xl bg-slate-950 px-4 py-3 text-cyan-300 underline decoration-cyan-600 underline-offset-4">
-                  -
-                </a>
-              </div>
-              <div>
-                <div class="mb-1 text-slate-400">Status URL</div>
-                <a id="result-status" href="#" target="_blank" rel="noreferrer" class="block break-all rounded-2xl bg-slate-950 px-4 py-3 text-slate-300">
-                  -
-                </a>
-              </div>
-            </div>
-
-            <div class="mt-6 rounded-2xl border border-slate-800 bg-slate-950/80 p-4">
-              <div class="mb-2 text-sm font-semibold text-slate-200">실행 방법</div>
-              <ol class="list-decimal space-y-2 pl-5 text-sm text-slate-400">
-                <li>User ID를 입력하고 세션 생성</li>
-                <li>session_id가 반환되면 Launch 버튼 클릭</li>
-                <li>새 탭에서 Jupyter Lab 실행</li>
-              </ol>
-            </div>
-          </section>
-        </main>
-
-        <section class="mt-8 rounded-3xl border border-white/10 bg-slate-900/80 p-6">
-          <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <section id="app-view" class="hidden">
+          <header class="mb-8 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div class="inline-flex rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-rose-200">
-                Admin Console
-              </div>
-              <h2 class="mt-3 text-2xl font-black text-white">전체 사용자 Jupyter 사용 현황</h2>
-              <p class="mt-2 text-sm text-slate-300">
-                관리자 계정으로 로그인하면 전체 사용자 세션, 사용 시간, CPU, 메모리, 디스크 정보를 TUI Grid로 볼 수 있습니다.
-              </p>
+              <div id="portal-pill" class="inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]"></div>
+              <h2 id="welcome-title" class="mt-4 text-3xl font-black text-white"></h2>
+              <p id="welcome-copy" class="mt-2 max-w-2xl text-sm text-slate-300"></p>
             </div>
-            <button
-              id="refresh-admin"
-              type="button"
-              class="rounded-2xl border border-rose-400/40 px-4 py-2 text-sm font-bold text-rose-200 transition hover:bg-rose-400/10"
-            >
-              현황 새로고침
-            </button>
-          </div>
+            <div class="flex items-center gap-3">
+              <span id="login-user-chip" class="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200"></span>
+              <button id="logout-button" type="button" class="rounded-2xl border border-white/15 px-4 py-2 text-sm font-bold text-slate-200 transition hover:bg-white/10">로그아웃</button>
+            </div>
+          </header>
 
-          <div class="grid gap-4 lg:grid-cols-[0.45fr_1fr]">
-            <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-              <h3 class="text-sm font-bold text-white">관리자 로그인</h3>
-              <div class="mt-4 space-y-3">
+          <section id="user-view" class="hidden grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <article class="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+              <h3 class="text-xl font-black text-white">내 Jupyter 세션</h3>
+              <p class="mt-2 text-sm text-slate-300">로그인한 아이디로 세션을 만들고, 준비가 끝나면 바로 Jupyter Lab을 엽니다.</p>
+              <form id="session-form" class="mt-6 space-y-4">
                 <div>
-                  <label class="mb-1 block text-xs text-slate-400">Admin ID</label>
-                  <input id="admin-user" type="text" value="admin" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
+                  <label class="mb-2 block text-sm font-medium text-slate-200">사용자 ID</label>
+                  <input id="userId" type="text" class="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white" readonly />
+                </div>
+                <div class="flex flex-wrap gap-3">
+                  <button type="submit" class="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-black text-slate-950">세션 생성</button>
+                  <button id="launch-button" type="button" disabled class="rounded-2xl border border-sky-400/40 px-5 py-3 text-sm font-black text-sky-200 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500">Jupyter Lab 열기</button>
+                </div>
+              </form>
+              <div id="status-banner" class="mt-6 hidden rounded-2xl border px-4 py-3 text-sm"></div>
+              <div id="waiting-panel" class="mt-6 hidden rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-amber-100">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-full border border-amber-300/40 bg-amber-300/10">
+                    <svg class="h-5 w-5 animate-spin text-amber-200" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"></circle>
+                      <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="text-sm font-semibold">대기 또는 준비 중</div>
+                    <div id="waiting-copy" class="text-xs text-amber-100/80">세션이 준비되면 실행 버튼이 활성화됩니다.</div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6">
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-xl font-black text-white">세션 상태</h3>
+                <span id="session-state" class="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">idle</span>
+              </div>
+              <div class="space-y-4 text-sm">
+                <div>
+                  <div class="mb-1 text-slate-400">User ID</div>
+                  <div id="result-user" class="rounded-2xl bg-slate-950 px-4 py-3 text-slate-200">-</div>
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-slate-400">Password</label>
-                  <input id="admin-pass" type="password" value="123456" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
+                  <div class="mb-1 text-slate-400">Session ID</div>
+                  <div id="result-session" class="rounded-2xl bg-slate-950 px-4 py-3 font-mono text-sky-300">-</div>
                 </div>
-                <button
-                  id="admin-login"
-                  type="button"
-                  class="w-full rounded-2xl bg-rose-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-rose-300"
-                >
-                  관리자 현황 조회
-                </button>
+                <div>
+                  <div class="mb-1 text-slate-400">Launch URL</div>
+                  <a id="result-launch" href="#" target="_blank" rel="noreferrer" class="block break-all rounded-2xl bg-slate-950 px-4 py-3 text-sky-300 underline underline-offset-4">-</a>
+                </div>
+                <div>
+                  <div class="mb-1 text-slate-400">Status URL</div>
+                  <a id="result-status" href="#" target="_blank" rel="noreferrer" class="block break-all rounded-2xl bg-slate-950 px-4 py-3 text-slate-300">-</a>
+                </div>
+                <div>
+                  <div class="mb-1 text-slate-400">Queue</div>
+                  <div id="queue-info" class="rounded-2xl bg-slate-950 px-4 py-3 text-slate-300">-</div>
+                </div>
               </div>
-              <div id="admin-banner" class="mt-4 hidden rounded-2xl border px-4 py-3 text-sm"></div>
-            </div>
+            </article>
+          </section>
 
-            <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-              <div class="mb-3 flex items-center justify-between">
-                <div class="text-sm font-semibold text-slate-200">실시간 사용자 현황 Grid</div>
-                <div id="admin-summary" class="text-xs text-slate-400">로그인 후 데이터 로드</div>
+          <section id="admin-view" class="hidden rounded-[2rem] border border-white/10 bg-slate-900/80 p-6">
+            <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div class="inline-flex rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-rose-200">Admin Console</div>
+                <h3 class="mt-3 text-2xl font-black text-white">전체 사용자 Jupyter 운영 현황</h3>
+                <p class="mt-2 text-sm text-slate-300">TUI Grid에서 사용자 세션 중지와 Pod 삭제를 바로 수행할 수 있습니다.</p>
               </div>
-              <div id="admin-grid" class="overflow-hidden rounded-xl border border-slate-800"></div>
+              <div class="flex gap-3">
+                <button id="refresh-admin" type="button" class="rounded-2xl border border-rose-400/40 px-4 py-2 text-sm font-bold text-rose-200 transition hover:bg-rose-400/10">현황 새로고침</button>
+              </div>
             </div>
-          </div>
+            <div id="admin-banner" class="mb-4 hidden rounded-2xl border px-4 py-3 text-sm"></div>
+            <div class="mb-3 flex items-center justify-between">
+              <div class="text-sm font-semibold text-slate-200">실시간 Grid</div>
+              <div id="admin-summary" class="text-xs text-slate-400">데이터를 불러오는 중입니다.</div>
+            </div>
+            <div id="admin-grid" class="overflow-hidden rounded-xl border border-slate-800"></div>
+          </section>
         </section>
       </div>
 
       <script>
+        const loginView = document.getElementById("login-view");
+        const appView = document.getElementById("app-view");
+        const loginForm = document.getElementById("login-form");
+        const loginBanner = document.getElementById("login-banner");
+        const loginUsername = document.getElementById("login-username");
+        const loginPassword = document.getElementById("login-password");
+        const logoutButton = document.getElementById("logout-button");
+        const portalPill = document.getElementById("portal-pill");
+        const welcomeTitle = document.getElementById("welcome-title");
+        const welcomeCopy = document.getElementById("welcome-copy");
+        const loginUserChip = document.getElementById("login-user-chip");
+        const userView = document.getElementById("user-view");
+        const adminView = document.getElementById("admin-view");
         const form = document.getElementById("session-form");
         const launchButton = document.getElementById("launch-button");
         const stateEl = document.getElementById("session-state");
         const banner = document.getElementById("status-banner");
-
+        const waitingPanel = document.getElementById("waiting-panel");
+        const waitingCopy = document.getElementById("waiting-copy");
         const resultUser = document.getElementById("result-user");
         const resultSession = document.getElementById("result-session");
         const resultLaunch = document.getElementById("result-launch");
         const resultStatus = document.getElementById("result-status");
-        const waitingPanel = document.getElementById("waiting-panel");
-        const adminUser = document.getElementById("admin-user");
-        const adminPass = document.getElementById("admin-pass");
-        const adminLogin = document.getElementById("admin-login");
+        const queueInfo = document.getElementById("queue-info");
+        const userIdInput = document.getElementById("userId");
         const adminBanner = document.getElementById("admin-banner");
         const adminSummary = document.getElementById("admin-summary");
         const refreshAdmin = document.getElementById("refresh-admin");
 
+        let authToken = "";
+        let authRole = "";
+        let authUsername = "";
         let currentLaunchUrl = "";
         let currentSessionId = "";
         let pollTimer = null;
-        let adminAuthHeader = "";
         let adminGrid = null;
 
-        function setBanner(message, kind) {
-          banner.classList.remove("hidden", "border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100", "border-rose-400/40", "bg-rose-400/10", "text-rose-100");
+        function setMessage(el, message, kind) {
+          el.classList.remove("hidden", "border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100", "border-rose-400/40", "bg-rose-400/10", "text-rose-100");
           if (kind === "success") {
-            banner.classList.add("border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100");
+            el.classList.add("border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100");
           } else {
-            banner.classList.add("border-rose-400/40", "bg-rose-400/10", "text-rose-100");
+            el.classList.add("border-rose-400/40", "bg-rose-400/10", "text-rose-100");
           }
-          banner.textContent = message;
+          el.textContent = message;
+        }
+
+        function authHeaders() {
+          return {
+            accept: "application/json",
+            authorization: `Bearer ${authToken}`
+          };
         }
 
         function setState(text) {
           stateEl.textContent = text;
         }
 
-        function setAdminBanner(message, kind) {
-          adminBanner.classList.remove("hidden", "border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100", "border-rose-400/40", "bg-rose-400/10", "text-rose-100");
-          if (kind === "success") {
-            adminBanner.classList.add("border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100");
-          } else {
-            adminBanner.classList.add("border-rose-400/40", "bg-rose-400/10", "text-rose-100");
-          }
-          adminBanner.textContent = message;
-        }
-
-        function setWaiting(isWaiting) {
+        function setWaiting(isWaiting, message) {
           waitingPanel.classList.toggle("hidden", !isWaiting);
+          if (message) waitingCopy.textContent = message;
         }
 
         function stopPolling() {
@@ -306,34 +271,54 @@ data:
           }
         }
 
+        function formatWait(seconds) {
+          if (!seconds) return "즉시 실행 가능";
+          const minutes = Math.ceil(seconds / 60);
+          return `예상 대기 ${minutes}분`;
+        }
+
+        function activateUserView() {
+          portalPill.className = "inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-sky-200";
+          portalPill.textContent = "User Portal";
+          welcomeTitle.textContent = "내 Jupyter 세션 실행";
+          welcomeCopy.textContent = "로그인한 사용자 계정으로 세션을 생성하고 준비 상태를 확인합니다.";
+          userView.classList.remove("hidden");
+          adminView.classList.add("hidden");
+          userIdInput.value = authUsername;
+        }
+
+        function activateAdminView() {
+          portalPill.className = "inline-flex rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-rose-200";
+          portalPill.textContent = "Admin Portal";
+          welcomeTitle.textContent = "관리자 운영 콘솔";
+          welcomeCopy.textContent = "사용자 세션 현황을 보고, 세션 중지와 Pod 삭제를 직접 수행할 수 있습니다.";
+          adminView.classList.remove("hidden");
+          userView.classList.add("hidden");
+        }
+
         async function pollSessionStatus(sessionId) {
           try {
-            const response = await fetch(`/api/session/${encodeURIComponent(sessionId)}`, {
-              headers: { accept: "application/json" }
-            });
-
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}`);
-            }
-
+            const response = await fetch(`/api/session/${encodeURIComponent(sessionId)}`, { headers: authHeaders() });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             setState(data.status);
             resultStatus.textContent = `/session/${data.session_id || sessionId}`;
+            queueInfo.textContent = data.queue_position ? `대기 순번 ${data.queue_position} / ${formatWait(data.estimated_wait_seconds)}` : formatWait(data.estimated_wait_seconds);
 
             if (data.can_launch) {
               launchButton.disabled = false;
-              setWaiting(false);
-              setBanner("Jupyter Lab 준비 완료. Launch 버튼을 눌러 실행하세요.", "success");
+              setWaiting(false, "");
+              setMessage(banner, "Jupyter Lab 준비 완료. 실행 버튼을 눌러주세요.", "success");
               stopPolling();
               return;
             }
 
-            setWaiting(true);
             launchButton.disabled = true;
+            setWaiting(true, data.queue_position ? `현재 대기 순번 ${data.queue_position}, ${formatWait(data.estimated_wait_seconds)}` : "세션이 준비되면 실행 버튼이 활성화됩니다.");
             pollTimer = setTimeout(() => pollSessionStatus(sessionId), 3000);
           } catch (error) {
-            setWaiting(false);
-            setBanner(`세션 상태 확인 실패: ${error.message}`, "error");
+            setWaiting(false, "");
+            setMessage(banner, `세션 상태 확인 실패: ${error.message}`, "error");
             stopPolling();
           }
         }
@@ -342,22 +327,33 @@ data:
           if (adminGrid) return adminGrid;
           adminGrid = new tui.Grid({
             el: document.getElementById("admin-grid"),
-            bodyHeight: 420,
+            bodyHeight: 520,
             scrollX: true,
             scrollY: true,
             rowHeaders: ["rowNum"],
             columns: [
-              { header: "Account", name: "username", minWidth: 120 },
+              { header: "Account", name: "username", minWidth: 110 },
               { header: "Session", name: "session_id", minWidth: 140 },
-              { header: "Status", name: "status", minWidth: 100 },
+              { header: "Status", name: "status", minWidth: 90 },
               { header: "Used Min", name: "usage_minutes", minWidth: 90, align: "right" },
-              { header: "CPU(m)", name: "cpu_millicores", minWidth: 90, align: "right" },
+              { header: "CPU(m)", name: "cpu_millicores", minWidth: 85, align: "right" },
               { header: "Mem(Mi)", name: "memory_mib", minWidth: 90, align: "right" },
-              { header: "Disk Used(Gi)", name: "disk_used_gib", minWidth: 110, align: "right" },
-              { header: "Disk Free(Gi)", name: "disk_available_gib", minWidth: 110, align: "right" },
-              { header: "Disk %", name: "disk_usage_percent", minWidth: 90, align: "right" },
-              { header: "Pod", name: "pod_name", minWidth: 220 },
-              { header: "PVC", name: "pvc_name", minWidth: 180 }
+              { header: "Disk %", name: "disk_usage_percent", minWidth: 80, align: "right" },
+              { header: "Pod", name: "pod_name", minWidth: 210 },
+              { header: "PVC", name: "pvc_name", minWidth: 170 },
+              {
+                header: "Actions",
+                name: "actions",
+                minWidth: 220,
+                formatter({ row }) {
+                  return `
+                    <div class="flex gap-2 py-1">
+                      <button class="admin-stop rounded-lg bg-amber-400 px-2 py-1 text-xs font-bold text-slate-950" data-session="${row.session_id}">세션 중지</button>
+                      <button class="admin-delete rounded-lg bg-rose-400 px-2 py-1 text-xs font-bold text-slate-950" data-session="${row.session_id}">Pod 삭제</button>
+                    </div>
+                  `;
+                }
+              }
             ],
             data: []
           });
@@ -365,95 +361,123 @@ data:
         }
 
         async function loadAdminUsage() {
-          if (!adminAuthHeader) {
-            setAdminBanner("관리자 로그인 정보가 필요합니다.", "error");
-            return;
-          }
           try {
-            const response = await fetch("/api/admin/usage", {
-              headers: {
-                accept: "application/json",
-                authorization: adminAuthHeader
-              }
-            });
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}`);
-            }
+            const response = await fetch("/api/admin/usage", { headers: authHeaders() });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             ensureAdminGrid().resetData(data.rows || []);
             adminSummary.textContent = `총 ${data.total}개 세션`;
-            setAdminBanner("관리자 현황 데이터를 불러왔습니다.", "success");
+            setMessage(adminBanner, "관리자 현황 데이터를 불러왔습니다.", "success");
           } catch (error) {
             adminSummary.textContent = "조회 실패";
-            setAdminBanner(`관리자 조회 실패: ${error.message}`, "error");
+            setMessage(adminBanner, `관리자 조회 실패: ${error.message}`, "error");
           }
         }
 
-        launchButton.addEventListener("click", () => {
-          if (currentLaunchUrl) {
-            window.open(currentLaunchUrl, "_blank", "noopener,noreferrer");
+        async function performAdminAction(kind, sessionId) {
+          const method = kind === "stop" ? "POST" : "DELETE";
+          const url = kind === "stop" ? `/api/admin/session/${encodeURIComponent(sessionId)}/stop` : `/api/admin/session/${encodeURIComponent(sessionId)}`;
+          try {
+            const response = await fetch(url, { method, headers: authHeaders() });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            setMessage(adminBanner, `${sessionId} 작업이 완료되었습니다.`, "success");
+            await loadAdminUsage();
+          } catch (error) {
+            setMessage(adminBanner, `관리 작업 실패: ${error.message}`, "error");
           }
+        }
+
+        document.getElementById("admin-grid").addEventListener("click", async (event) => {
+          const stopButton = event.target.closest(".admin-stop");
+          const deleteButton = event.target.closest(".admin-delete");
+          if (stopButton) await performAdminAction("stop", stopButton.dataset.session);
+          if (deleteButton) await performAdminAction("delete", deleteButton.dataset.session);
         });
 
-        adminLogin.addEventListener("click", async () => {
-          const username = adminUser.value.trim();
-          const password = adminPass.value;
-          adminAuthHeader = `Basic ${btoa(`${username}:${password}`)}`;
-          await loadAdminUsage();
+        launchButton.addEventListener("click", () => {
+          if (currentLaunchUrl) window.open(currentLaunchUrl, "_blank", "noopener,noreferrer");
         });
 
-        refreshAdmin.addEventListener("click", async () => {
-          await loadAdminUsage();
+        logoutButton.addEventListener("click", () => {
+          authToken = "";
+          authRole = "";
+          authUsername = "";
+          currentLaunchUrl = "";
+          currentSessionId = "";
+          stopPolling();
+          appView.classList.add("hidden");
+          loginView.classList.remove("hidden");
+          loginPassword.value = "123456";
+        });
+
+        refreshAdmin.addEventListener("click", loadAdminUsage);
+
+        loginForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          try {
+            const response = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "content-type": "application/json", accept: "application/json" },
+              body: JSON.stringify({ username: loginUsername.value.trim(), password: loginPassword.value })
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            authToken = data.access_token;
+            authRole = data.role;
+            authUsername = data.username;
+            loginUserChip.textContent = `${authUsername} (${authRole})`;
+            loginView.classList.add("hidden");
+            appView.classList.remove("hidden");
+            if (authRole === "admin") {
+              activateAdminView();
+              await loadAdminUsage();
+            } else {
+              activateUserView();
+            }
+          } catch (error) {
+            setMessage(loginBanner, `로그인 실패: ${error.message}`, "error");
+          }
         });
 
         form.addEventListener("submit", async (event) => {
           event.preventDefault();
-          const userId = document.getElementById("userId").value.trim();
-
-          if (!userId) {
-            setBanner("User ID를 입력하세요.", "error");
-            return;
-          }
-
           launchButton.disabled = true;
           stopPolling();
-          setWaiting(false);
+          setWaiting(false, "");
           setState("creating");
-          setBanner("세션을 생성하는 중입니다...", "success");
-
+          setMessage(banner, "세션 생성 요청을 보내는 중입니다.", "success");
           try {
-            const response = await fetch(`/api/users/${encodeURIComponent(userId)}/session`, {
+            const response = await fetch(`/api/users/${encodeURIComponent(authUsername)}/session`, {
               method: "POST",
-              headers: {
-                accept: "application/json"
-              }
+              headers: authHeaders()
             });
-
-            if (!response.ok) {
-              const text = await response.text();
-              throw new Error(text || `HTTP ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             currentLaunchUrl = data.launch_url;
             currentSessionId = data.session_id;
-
             resultUser.textContent = data.user_id;
             resultSession.textContent = data.session_id;
             resultLaunch.textContent = data.launch_url;
             resultLaunch.href = data.launch_url;
             resultStatus.textContent = data.status_url;
             resultStatus.href = data.status_url;
-
+            queueInfo.textContent = data.queue_position ? `대기 순번 ${data.queue_position} / ${formatWait(data.estimated_wait_seconds)}` : formatWait(data.estimated_wait_seconds);
             setState(data.status);
-            launchButton.disabled = true;
-            setWaiting(true);
-            setBanner("세션이 생성되었습니다. Jupyter Lab 준비가 끝날 때까지 잠시 기다려 주세요.", "success");
+
+            if (data.can_launch) {
+              launchButton.disabled = false;
+              setWaiting(false, "");
+              setMessage(banner, "즉시 실행 가능한 세션입니다.", "success");
+              return;
+            }
+
+            setWaiting(true, data.queue_position ? `현재 대기 순번 ${data.queue_position}, ${formatWait(data.estimated_wait_seconds)}` : "세션이 준비되면 실행 버튼이 활성화됩니다.");
+            setMessage(banner, "세션이 접수되었습니다. 준비 상태를 확인합니다.", "success");
             pollSessionStatus(data.session_id);
           } catch (error) {
             setState("error");
-            setWaiting(false);
-            setBanner(`세션 생성 실패: ${error.message}`, "error");
+            setWaiting(false, "");
+            setMessage(banner, `세션 생성 실패: ${error.message}`, "error");
           }
         });
       </script>

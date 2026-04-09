@@ -2,7 +2,7 @@
 FastAPI Backend for Dynamic Jupyter Lab Pod Management with HPA
 사용자 증가에 따라 Jupyter Lab Pod를 동적으로 생성/관리하는 백엔드
 """
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect, Path, Depends
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect, Path, Depends, Header
 from fastapi.responses import RedirectResponse, HTMLResponse, StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
@@ -19,8 +19,10 @@ from datetime import datetime
 from urllib.parse import urlencode, parse_qsl
 import re
 import secrets
+import json
 
 import httpx
+import redis
 import websockets
 
 # 로깅 설정
@@ -55,15 +57,39 @@ JUPYTER_PVC_SIZE = os.getenv("JUPYTER_PVC_SIZE", "5Gi")
 JUPYTER_STORAGE_CLASS = os.getenv("JUPYTER_STORAGE_CLASS", "").strip()
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "123456")
+USER_DEFAULT_PASSWORD = os.getenv("USER_DEFAULT_PASSWORD", "123456")
 MAX_CONCURRENT_JUPYTER_PODS = int(os.getenv("MAX_CONCURRENT_JUPYTER_PODS", "9"))
 QUEUE_SLOT_MINUTES = int(os.getenv("QUEUE_SLOT_MINUTES", "15"))
+REDIS_URL = os.getenv("REDIS_URL", "redis://jupyter-redis-service:6379/0")
+AUTH_TOKEN_TTL_SECONDS = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "43200"))
 
-# 활성 사용자 세션 저장소 (실제 환경에서는 Redis 등 사용)
 active_sessions: Dict[str, Dict] = {}
+redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+
+SESSION_KEY_PREFIX = "jupyter:session:"
+USER_SESSION_KEY_PREFIX = "jupyter:user-session:"
+AUTH_TOKEN_KEY_PREFIX = "jupyter:auth:"
 
 
 class UserRequest(BaseModel):
     username: str
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    username: str
+    role: str
+    access_token: str
+    frontend_view: str
+
+
+class AuthContext(BaseModel):
+    username: str
+    role: str
 
 
 class SessionResponse(BaseModel):
@@ -90,6 +116,74 @@ class CreateSessionByUserResponse(BaseModel):
     estimated_wait_seconds: int = 0
 
 
+def serialize_record(record: Dict) -> str:
+    return json.dumps(record, ensure_ascii=False)
+
+
+def save_session_record(record: Dict):
+    active_sessions[record["session_id"]] = record
+    redis_client.set(f"{SESSION_KEY_PREFIX}{record['session_id']}", serialize_record(record))
+    redis_client.set(f"{USER_SESSION_KEY_PREFIX}{normalize_user_id(record['username'])}", record["session_id"])
+
+
+def load_all_sessions_from_redis():
+    active_sessions.clear()
+    for key in redis_client.scan_iter(f"{SESSION_KEY_PREFIX}*"):
+        value = redis_client.get(key)
+        if not value:
+            continue
+        record = json.loads(value)
+        active_sessions[record["session_id"]] = record
+
+
+def remove_session_record(session_id: str):
+    record = active_sessions.pop(session_id, None)
+    redis_client.delete(f"{SESSION_KEY_PREFIX}{session_id}")
+    if record:
+        user_key = f"{USER_SESSION_KEY_PREFIX}{normalize_user_id(record['username'])}"
+        current = redis_client.get(user_key)
+        if current == session_id:
+            redis_client.delete(user_key)
+
+
+def issue_auth_token(username: str, role: str) -> str:
+    token = secrets.token_urlsafe(32)
+    payload = {"username": username, "role": role}
+    redis_client.setex(f"{AUTH_TOKEN_KEY_PREFIX}{token}", AUTH_TOKEN_TTL_SECONDS, serialize_record(payload))
+    return token
+
+
+def read_auth_token(token: str) -> Optional[AuthContext]:
+    raw = redis_client.get(f"{AUTH_TOKEN_KEY_PREFIX}{token}")
+    if not raw:
+        return None
+    payload = json.loads(raw)
+    return AuthContext(username=payload["username"], role=payload["role"])
+
+
+def get_current_auth(authorization: Optional[str] = Header(default=None)) -> AuthContext:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+    token = authorization.split(" ", 1)[1].strip()
+    auth = read_auth_token(token)
+    if not auth:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return auth
+
+
+def require_admin_token(auth: AuthContext = Depends(get_current_auth)) -> AuthContext:
+    if auth.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return auth
+
+
+def require_session_owner_or_admin(session_username: str, auth: AuthContext):
+    if auth.role == "admin":
+        return
+    if normalize_user_id(auth.username) != normalize_user_id(session_username):
+        raise HTTPException(status_code=403, detail="Not allowed to access another user's session")
+
+
 def require_admin(credentials: HTTPBasicCredentials = Depends(security)):
     valid_user = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
     valid_password = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
@@ -100,6 +194,12 @@ def require_admin(credentials: HTTPBasicCredentials = Depends(security)):
             headers={"WWW-Authenticate": "Basic"},
         )
     return credentials.username
+
+
+@app.on_event("startup")
+async def startup_event():
+    load_all_sessions_from_redis()
+    logger.info("Loaded %s sessions from Redis", len(active_sessions))
 
 
 @app.get("/")
@@ -116,6 +216,10 @@ async def root():
 @app.get("/health")
 async def health():
     """헬스 체크 (Kubernetes Probes용)"""
+    try:
+        redis_client.ping()
+    except redis.RedisError as exc:
+        raise HTTPException(status_code=503, detail=f"Redis unavailable: {exc}")
     return {"status": "healthy"}
 
 
@@ -126,6 +230,37 @@ async def metrics():
         "active_sessions": len(active_sessions),
         "sessions": list(active_sessions.keys())
     }
+
+
+@app.post(
+    "/auth/login",
+    response_model=LoginResponse,
+    tags=["Auth"],
+    summary="Login for admin or user"
+)
+async def login(payload: LoginRequest):
+    username = payload.username.strip()
+    if not username:
+        raise HTTPException(status_code=400, detail="Username is required")
+
+    if username == ADMIN_USERNAME:
+        if payload.password != ADMIN_PASSWORD:
+            raise HTTPException(status_code=401, detail="Invalid admin credentials")
+        role = "admin"
+        frontend_view = "admin"
+    else:
+        if payload.password != USER_DEFAULT_PASSWORD:
+            raise HTTPException(status_code=401, detail="Invalid user credentials")
+        role = "user"
+        frontend_view = "user"
+
+    token = issue_auth_token(username, role)
+    return LoginResponse(
+        username=username,
+        role=role,
+        access_token=token,
+        frontend_view=frontend_view
+    )
 
 
 def build_proxy_base(request: Request) -> str:
@@ -187,6 +322,7 @@ def refresh_queue_metadata():
     for index, session_id in enumerate(get_queued_session_ids(), start=1):
         active_sessions[session_id]["queue_position"] = index
         active_sessions[session_id]["estimated_wait_seconds"] = index * QUEUE_SLOT_MINUTES * 60
+        save_session_record(active_sessions[session_id])
 
 
 def mark_session_as_queued(record: Dict):
@@ -194,6 +330,7 @@ def mark_session_as_queued(record: Dict):
     record["queued_at"] = datetime.now().isoformat()
     record["queue_position"] = None
     record["estimated_wait_seconds"] = 0
+    save_session_record(record)
     refresh_queue_metadata()
 
 
@@ -401,9 +538,9 @@ def find_existing_session_for_user(username: str, request: Request) -> Dict | No
             created_at=created_at,
             pvc_name=make_pvc_name(normalized_user)
         )
-        active_sessions[session_id] = record
         record["queue_position"] = None
         record["estimated_wait_seconds"] = 0
+        save_session_record(record)
         return record
     return None
 
@@ -439,7 +576,7 @@ def hydrate_session_from_cluster(session_id: str) -> Dict | None:
         "queue_position": None,
         "estimated_wait_seconds": 0
     }
-    active_sessions[session_id] = record
+    save_session_record(record)
     return record
 
 
@@ -549,6 +686,7 @@ def try_start_queued_sessions():
             record["status"] = "error"
             record["estimated_wait_seconds"] = 0
             record["queue_position"] = None
+            save_session_record(record)
             refresh_queue_metadata()
             return
 
@@ -561,6 +699,7 @@ def try_start_queued_sessions():
         record["queue_position"] = None
         record["estimated_wait_seconds"] = 0
         record.pop("queued_at", None)
+        save_session_record(record)
         asyncio.create_task(wait_for_pod_ready(session_id, pod_name))
         refresh_queue_metadata()
 
@@ -621,7 +760,6 @@ async def create_session_for_username(
             created_at=datetime.now().isoformat(),
             pvc_name=pvc_name
         )
-        active_sessions[session_id] = record
         mark_session_as_queued(record)
 
         if count_active_jupyter_pods() < MAX_CONCURRENT_JUPYTER_PODS:
@@ -643,6 +781,8 @@ async def create_session_for_username(
     description="요청 본문의 username 값으로 사용자 전용 Jupyter Lab Pod를 생성합니다."
 )
 async def create_session(user: UserRequest, background_tasks: BackgroundTasks, request: Request):
+    auth: AuthContext = get_current_auth(request.headers.get("authorization"))
+    require_session_owner_or_admin(user.username, auth)
     return await create_session_for_username(user.username, background_tasks, request)
 
 
@@ -659,8 +799,10 @@ async def create_session(user: UserRequest, background_tasks: BackgroundTasks, r
 async def create_session_for_user_id(
     request: Request,
     background_tasks: BackgroundTasks,
+    auth: AuthContext = Depends(get_current_auth),
     user_id: str = Path(..., description="세션을 생성할 사용자 ID", examples=["alice01"])
 ):
+    require_session_owner_or_admin(user_id, auth)
     session = await create_session_for_username(user_id, background_tasks, request)
     proxy_base = build_proxy_base(request)
     return CreateSessionByUserResponse(
@@ -688,6 +830,7 @@ async def wait_for_pod_ready(session_id: str, pod_name: str):
                 active_sessions[session_id]["status"] = "running"
                 active_sessions[session_id]["queue_position"] = None
                 active_sessions[session_id]["estimated_wait_seconds"] = 0
+                save_session_record(active_sessions[session_id])
                 logger.info(f"Pod {pod_name} is now running")
                 return
         except ApiException:
@@ -697,6 +840,7 @@ async def wait_for_pod_ready(session_id: str, pod_name: str):
     
     # 타임아웃
     active_sessions[session_id]["status"] = "timeout"
+    save_session_record(active_sessions[session_id])
     logger.warning(f"Pod {pod_name} did not become ready in time")
     try_start_queued_sessions()
 
@@ -706,10 +850,11 @@ async def wait_for_pod_ready(session_id: str, pod_name: str):
     tags=["Sessions"],
     summary="Get session details"
 )
-async def get_session(session_id: str):
+async def get_session(session_id: str, auth: AuthContext = Depends(get_current_auth)):
     """세션 정보 조회"""
     try_start_queued_sessions()
     session_info = get_session_or_404(session_id)
+    require_session_owner_or_admin(session_info["username"], auth)
     return {
         **session_info,
         "can_launch": session_info["status"] == "running",
@@ -723,20 +868,51 @@ async def get_session(session_id: str):
     tags=["Sessions"],
     summary="List active sessions"
 )
-async def list_sessions():
+async def list_sessions(auth: AuthContext = Depends(get_current_auth)):
     """모든 활성 세션 목록"""
     try_start_queued_sessions()
+    if auth.role == "admin":
+        sessions = active_sessions
+    else:
+        sessions = {
+            session_id: data
+            for session_id, data in active_sessions.items()
+            if normalize_user_id(data["username"]) == normalize_user_id(auth.username)
+        }
     return {
-        "total": len(active_sessions),
-        "sessions": active_sessions
+        "total": len(sessions),
+        "sessions": sessions
     }
+
+
+def terminate_session_record(session_info: Dict):
+    pod_name = session_info["pod_name"]
+    service_name = session_info["service_name"]
+
+    if session_info["status"] != "queued":
+        try:
+            v1.delete_namespaced_pod(name=pod_name, namespace=NAMESPACE)
+            logger.info("Deleted pod: %s", pod_name)
+        except ApiException as exc:
+            if exc.status != 404:
+                raise
+        try:
+            v1.delete_namespaced_service(name=service_name, namespace=NAMESPACE)
+            logger.info("Deleted service: %s", service_name)
+        except ApiException as exc:
+            if exc.status != 404:
+                raise
+
+    remove_session_record(session_info["session_id"])
+    refresh_queue_metadata()
+    try_start_queued_sessions()
 
 
 @app.get(
     "/admin/usage",
     tags=["Admin"],
     summary="List all Jupyter usage rows",
-    dependencies=[Depends(require_admin)]
+    dependencies=[Depends(require_admin_token)]
 )
 async def admin_usage(request: Request):
     rows = collect_jupyter_usage_rows(request)
@@ -751,29 +927,36 @@ async def admin_usage(request: Request):
     tags=["Sessions"],
     summary="Delete a session"
 )
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, auth: AuthContext = Depends(get_current_auth)):
     """사용자 세션 및 Jupyter Lab Pod 삭제"""
     session_info = get_session_or_404(session_id)
-    pod_name = session_info["pod_name"]
-    service_name = session_info["service_name"]
-    
-    try:
-        if session_info["status"] != "queued":
-            v1.delete_namespaced_pod(name=pod_name, namespace=NAMESPACE)
-            logger.info(f"Deleted pod: {pod_name}")
-            v1.delete_namespaced_service(name=service_name, namespace=NAMESPACE)
-            logger.info(f"Deleted service: {service_name}")
-        
-        # 세션 정보 제거
-        del active_sessions[session_id]
-        refresh_queue_metadata()
-        try_start_queued_sessions()
-        
-        return {"message": f"Session {session_id} deleted successfully"}
-        
-    except ApiException as e:
-        logger.error(f"Failed to delete session: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete session: {e}")
+    require_session_owner_or_admin(session_info["username"], auth)
+    terminate_session_record(session_info)
+    return {"message": f"Session {session_id} deleted successfully"}
+
+
+@app.post(
+    "/admin/session/{session_id}/stop",
+    tags=["Admin"],
+    summary="Stop a user session",
+    dependencies=[Depends(require_admin_token)]
+)
+async def admin_stop_session(session_id: str):
+    session_info = get_session_or_404(session_id)
+    terminate_session_record(session_info)
+    return {"message": f"Session {session_id} stopped"}
+
+
+@app.delete(
+    "/admin/session/{session_id}",
+    tags=["Admin"],
+    summary="Delete a user pod and session",
+    dependencies=[Depends(require_admin_token)]
+)
+async def admin_delete_session(session_id: str):
+    session_info = get_session_or_404(session_id)
+    terminate_session_record(session_info)
+    return {"message": f"Session {session_id} deleted"}
 
 
 @app.get(

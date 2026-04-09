@@ -41,6 +41,10 @@ spec:
           value: "9"
         - name: QUEUE_SLOT_MINUTES
           value: "15"
+        - name: REDIS_URL
+          value: "redis://jupyter-redis-service:6379/0"
+        - name: USER_DEFAULT_PASSWORD
+          value: "123456"
         resources:
           requests:
             memory: "256Mi"
