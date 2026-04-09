@@ -5,7 +5,7 @@ metadata:
   labels:
     app: vpa-nginx
 spec:
-  replicas: 4
+  replicas: 2
   selector:
     matchLabels:
       app: vpa-nginx
@@ -31,11 +31,10 @@ metadata:
   labels:
     app: vpa-nginx
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: vpa-nginx
   ports:
   - port: 80
     targetPort: 80
-    nodePort: 31232
    
