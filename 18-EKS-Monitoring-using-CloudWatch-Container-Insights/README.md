@@ -1,9 +1,11 @@
-# CloudWatch Container Insights로 EKS 모니터링
+# EKS 모니터링 - CloudWatch Container Insights + Prometheus + Grafana
 
 ## Step-01: 소개
-- CloudWatch란?
-- CloudWatch Container Insights란?
-- CloudWatch Agent와 Fluentd란?
+- 이 디렉터리는 이제 `CloudWatch Container Insights` 실습만이 아니라, `Prometheus + Grafana`를 함께 붙여 `eksdemo1`의 node / pod 메트릭을 시각화하는 실습까지 포함합니다.
+- 현재 `kube-manifests`에는 아래 두 흐름이 함께 들어 있습니다.
+  - CloudWatch Container Insights용 샘플 앱
+  - Prometheus / Grafana / node-exporter / kube-state-metrics / CPU load DaemonSet
+  - CloudWatch 샘플 앱 부하 생성용 Deployment
 
 ## Step-02: EKS 워커 노드 역할에 CloudWatch 정책 연결
 - Services -> EC2 -> Worker Node EC2 Instance -> IAM Role -> 해당 역할 클릭
@@ -43,15 +45,38 @@ kubectl -n amazon-cloudwatch get daemonsets
 
 
 ## Step-04: 샘플 Nginx 애플리케이션 배포
+- 현재 `Sample-Nginx-App.yml`은 단순 Pod 1개가 아니라, CloudWatch 실습에 맞게 아래를 포함하도록 보강돼 있습니다.
+  - `cloudwatch-demo` 네임스페이스
+  - NGINX ConfigMap
+  - `sample-nginx-deployment` 2 replicas
+  - `sample-nginx-service` ClusterIP Service
+  - readiness / liveness probe
+  - access log / error log가 남는 기본 NGINX 설정
+
 ```
 # 배포
-kubectl apply -f kube-manifests
+kubectl apply -f kube-manifests/Sample-Nginx-App.yml
+
+# 확인
+kubectl get all -n cloudwatch-demo
 ```
 
 ## Step-05: 샘플 Nginx 애플리케이션에 부하 생성
+- 부하도 이제 로컬 YAML로 재현 가능하게 추가했습니다.
+- `16-cloudwatch-load-generator.yml` 은 `sample-nginx-service` 로 지속적으로 요청을 보내 access log와 container metrics가 꾸준히 쌓이도록 합니다.
+
+```bash
+kubectl apply -f kube-manifests/16-cloudwatch-load-generator.yml
+kubectl get pods -n cloudwatch-demo
+```
+
+- 기존처럼 일회성 `ab` 테스트를 직접 실행해도 됩니다.
+
 ```
 # 부하 생성
-kubectl run --generator=run-pod/v1 apache-bench -i --tty --rm --image=httpd -- ab -n 500000 -c 1000 http://sample-nginx-service.default.svc.cluster.local/ 
+kubectl run apache-bench --rm -it --restart=Never --image=httpd \
+  -n cloudwatch-demo -- \
+  ab -n 500000 -c 1000 http://sample-nginx-service.cloudwatch-demo.svc.cluster.local/
 ```
 
 ## Step-06: CloudWatch 대시보드 접속
@@ -162,6 +187,11 @@ curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-i
 curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/eksdemo1/;s/{{region_name}}/ap-northeast-2/" | kubectl delete -f -
 ```
 
+```bash
+kubectl delete -f kube-manifests/16-cloudwatch-load-generator.yml
+kubectl delete -f kube-manifests/Sample-Nginx-App.yml
+```
+
 ## Step-11: Prometheus + Grafana로 EKS Node / Pod 메트릭 시각화 추가
 - CloudWatch Container Insights는 그대로 유지하고, 별도로 `Prometheus + Grafana`를 `monitoring` 네임스페이스에 올립니다.
 - 이 구성은 현재 `eksdemo1`의 node, pod, Jupyter autoscaling Pod 상태를 Grafana 대시보드로 시각화합니다.
@@ -170,6 +200,7 @@ curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-i
   - `node-exporter`
   - `prometheus-server`
   - `grafana`
+  - `node-cpu-load` (강제 CPU 스파이크 확인용)
 
 ### 배포 파일
 ```bash
@@ -231,7 +262,24 @@ topk(10, sum by (namespace, pod) (container_memory_working_set_bytes{container!=
 - `17-EKS-Autoscaling-Cluster-Autoscaler`에서 만든 `ca-jupyter-notebook` 8개 Pod가 떠 있는 상태면 Grafana에서 autoscaling 결과를 바로 볼 수 있습니다.
 - 노드가 늘어나는 과정은 `Node CPU Usage`, `Pod Phase Count`, `EKS Jupyter Autoscaling` 대시보드에서 확인하기 좋습니다.
 
-## Step-12: Prometheus / Grafana 정리
+## Step-12: Node CPU 시계열 강제 부하 실습
+- `15-node-cpu-load-daemonset.yml` 은 각 노드마다 CPU burner Pod를 1개씩 띄워 `Node CPU Usage` 그래프가 급격히 상승하는 모습을 확인하기 위한 실습용 매니페스트입니다.
+
+```bash
+kubectl apply -f kube-manifests/15-node-cpu-load-daemonset.yml
+kubectl get pods -n monitoring -l app=node-cpu-load -o wide
+kubectl top nodes
+```
+
+- Grafana에서 `EKS Node and Pod Overview` 대시보드의 `Node CPU Usage` 패널을 보면 배포 시점부터 CPU 시계열이 급상승해야 정상입니다.
+
+부하 종료:
+
+```bash
+kubectl delete -f kube-manifests/15-node-cpu-load-daemonset.yml
+```
+
+## Step-13: Prometheus / Grafana 정리
 ```bash
 kubectl delete -f kube-manifests/14-grafana.yml
 kubectl delete -f kube-manifests/13-prometheus.yml
@@ -240,7 +288,7 @@ kubectl delete -f kube-manifests/11-kube-state-metrics.yml
 kubectl delete -f kube-manifests/10-monitoring-namespace.yml
 ```
 
-## Step-13: 애플리케이션 정리
+## Step-14: 애플리케이션 정리
 ```
 # 앱 삭제
 kubectl delete -f  kube-manifests/

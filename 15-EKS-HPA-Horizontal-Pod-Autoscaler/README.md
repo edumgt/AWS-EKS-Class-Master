@@ -1,4 +1,4 @@
-# EKS - 수평 Pod 오토스케일링 (HPA) with Jupyter Lab Manager
+# EKS HPA 실습 - Jupyter Lab Session Manager
 
 ## Step-01: 소개
 
@@ -11,21 +11,28 @@
 - **Min/Max 설정**: 최소 및 최대 Pod 개수를 지정하여 범위 내에서만 조정
 
 ### 이 실습의 목표
-본 실습에서는 **FastAPI 기반 Jupyter Lab 관리 시스템**을 구축하고, 사용자 증가에 따라 백엔드 서비스가 자동으로 확장되는 것을 확인합니다.
+이 디렉터리의 YAML과 애플리케이션 코드는 단순 HPA 데모를 넘어서, **FastAPI + Redis + NGINX Frontend 기반 Jupyter Lab Session Manager**를 구성하도록 바뀌어 있습니다.
+즉 현재 실습 목적은 다음 두 가지입니다.
+- 사용자별 Jupyter Lab 세션을 생성하고 `/lab?sessionid=xxxx` 형태로 접속
+- 백엔드 API가 HPA에 의해 자동 확장되는지 확인
 
-#### 시스템 구성
+#### 현재 시스템 구성
 ```
-[사용자] → [LoadBalancer] → [FastAPI Backend (HPA 적용)]
-                                    ↓
-                          [동적 Jupyter Lab Pods]
+[사용자] → [Frontend NGINX LoadBalancer]
+                ↓
+        [FastAPI Backend (HPA 적용)]
+                ↓
+   [Redis 세션 저장소] + [사용자별 Jupyter Lab Pods]
 ```
 
 **주요 기능:**
-1. **FastAPI 백엔드**: 사용자 요청을 처리하고 Jupyter Lab Pod를 관리
-2. **동적 Pod 생성**: 각 사용자에게 독립적인 Jupyter Lab 환경 제공
-3. **사용자별 작업물 유지**: 같은 `user_id`로 재접속하면 기존 작업 디렉터리를 다시 사용
-4. **HPA 자동 스케일링**: 트래픽 증가 시 백엔드 Pod를 자동으로 확장
-5. **부하 테스트**: Python 스크립트로 HPA 동작 검증
+1. **로그인 기반 포털 UI**: Frontend NGINX에서 일반 사용자 / 관리자 화면 제공
+2. **FastAPI 백엔드**: 사용자 요청을 처리하고 Jupyter Lab Pod를 관리
+3. **동적 Jupyter Pod 생성**: 사용자별 독립 세션 제공
+4. **Redis 세션 저장**: 세션/대기열/상태 저장
+5. **관리자 기능**: 전체 세션, Pod, Node 상태 조회
+6. **HPA 자동 스케일링**: 백엔드 API Pod 자동 확장
+7. **부하 테스트**: Python 스크립트로 HPA 동작 검증
 
 ---
 
@@ -61,7 +68,7 @@ kubectl config view --minify --output 'jsonpath={..namespace}'
 
 ## Step-03: Docker 이미지 빌드 및 ECR 푸시
 
-### 3.1 프로젝트 구조 확인
+### 3.1 현재 프로젝트 구조
 ```
 15-EKS-HPA-Horizontal-Pod-Autoscaler/
 ├── app/
@@ -70,9 +77,12 @@ kubectl config view --minify --output 'jsonpath={..namespace}'
 │   └── Dockerfile          # Docker 이미지 정의
 ├── kube-manifests/
 │   ├── 01-rbac.yml         # ServiceAccount & RBAC
-│   ├── 02-backend-deployment.yml  # FastAPI Deployment & Service
-│   └── 03-hpa.yml          # HPA 설정
+│   ├── 02-backend-deployment.yml  # FastAPI Backend + Jupyter 실행 이미지 설정
+│   ├── 03-hpa.yml          # Backend HPA 설정
+│   ├── 04-frontend-nginx.yml # 로그인/관리자 UI용 Frontend
+│   └── 05-redis.yml        # 세션 저장용 Redis
 ├── build-and-push.sh       # 빌드 및 푸시 스크립트
+├── mirror-jupyter-image.sh # Jupyter 이미지를 ECR로 복제
 ├── load-test.py            # 부하 테스트 스크립트
 └── README.md
 ```

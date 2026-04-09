@@ -1,7 +1,7 @@
-# NGINX 카나리 배포 실습
+# EKS NGINX 카나리 배포 실습
 
-간단한 `nginx` 두 버전을 배포하고, replica 비율에 따라 외부 접속 비율이 달라지도록 구성한 예제입니다.  
-이 버전은 EKS에서 `Service type=LoadBalancer`로 외부 노출해 `CLB` 실습을 하는 흐름입니다.
+간단한 `nginx` stable / canary 두 버전을 배포하고, replica 비율에 따라 외부 접속 비율이 달라지도록 구성한 예제입니다.
+이 디렉터리의 YAML은 `LoadBalancer` Service 하나로 두 Deployment를 함께 바라보는 구조이며, EKS에서 외부 ELB 주소를 통해 카나리 비율 실습을 하도록 정리돼 있습니다.
 
 ## Step-01: 클러스터 준비
 ```bash
@@ -12,7 +12,7 @@ eksctl create cluster --name=eksdemo1 \
   --node-private-networking
 ```
 
-## Step-02: 실습 구조
+## Step-02: 현재 YAML 구성
 - `02-UserManagementMicroservice-Deployment.yml`: stable NGINX 배포
 - `04-NotificationMicroservice-Deployment.yml`: canary NGINX 배포
 - `03-UserManagement-NodePort-Service.yml`: stable/canary 공용 `LoadBalancer` Service
