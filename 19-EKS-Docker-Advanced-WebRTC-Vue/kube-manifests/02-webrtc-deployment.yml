@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webrtc-vue
+  namespace: webrtc
+  labels:
+    app: webrtc-vue
+    app.kubernetes.io/name: webrtc-vue
+    app.kubernetes.io/part-of: docker-advanced-webrtc-vue
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webrtc-vue
+  template:
+    metadata:
+      labels:
+        app: webrtc-vue
+        app.kubernetes.io/name: webrtc-vue
+        app.kubernetes.io/part-of: docker-advanced-webrtc-vue
+    spec:
+      containers:
+        - name: frontend
+          image: 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/webrtc-vue-frontend:latest
+          imagePullPolicy: Always
+          env:
+            - name: VITE_SIGNAL_PORT
+              value: "3001"
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+        - name: signaling
+          image: 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/webrtc-vue-signaling:latest
+          imagePullPolicy: Always
+          ports:
+            - name: signaling
+              containerPort: 3001
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
