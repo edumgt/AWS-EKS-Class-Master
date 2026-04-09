@@ -1,38 +1,51 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: v1-notification-microservice
+  name: nginx-canary
   labels:
-    app: notification-restapp
+    app: nginx-canary-demo
+    version: canary
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: notification-restapp     
+      app: nginx-canary-demo
+      version: canary
   template:
     metadata:
       labels:
-        app: notification-restapp 
+        app: nginx-canary-demo
+        version: canary
     spec:
       containers:
-        - name: notification-service
-          image: stacksimplify/kube-notifications-microservice:3.0.0-AWS-XRay
+        - name: nginx
+          image: nginx:1.25-alpine
           ports:
-            - containerPort: 8096
-          imagePullPolicy: Always
-          env:
-            - name: AWS_MAIL_SERVER_HOST
-              value: "smtp-service"
-            - name: AWS_MAIL_SERVER_USERNAME
-              value: "AKIASUF7HC7SQJ6BCLVS"
-            - name: AWS_MAIL_SERVER_PASSWORD
-              value: "BARcmLiC68wgmhTy/cQvz/E8vFzeizGqdeASNtCs6+Nv"
-            - name: AWS_MAIL_SERVER_FROM_ADDRESS
-              value: "stacksimplify@gmail.com"
-            - name: AWS_XRAY_TRACING_NAME 
-              value: "V1-Notification-Microservice"              
-            - name: AWS_XRAY_DAEMON_ADDRESS
-              value: "xray-service.default:2000"      
-            - name: AWS_XRAY_CONTEXT_MISSING 
-              value: "LOG_ERROR"  # Log an error and continue, Ideally RUNTIME_ERROR – Throw a runtime exception which is default option if not configured                                            
-
+            - containerPort: 80
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              cat <<'EOF' > /usr/share/nginx/html/index.html
+              <html>
+              <head><title>NGINX Canary</title></head>
+              <body style="font-family: sans-serif; padding: 2rem; background: #fff7ed;">
+                <h1>NGINX Canary</h1>
+                <p>This response is from the canary deployment.</p>
+              </body>
+              </html>
+              EOF
+              nginx -g 'daemon off;'
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
