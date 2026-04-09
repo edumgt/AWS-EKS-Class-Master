@@ -1,155 +1,148 @@
-# EKS - 클러스터 오토스케일러
+# EKS - Cluster Autoscaler
 
 ## Step-01: 소개
-- Kubernetes Cluster Autoscaler는 리소스 부족으로 Pod가 실행되지 않거나, 노드가 충분히 여유로워 Pod를 다른 노드로 옮길 수 있을 때 클러스터 노드 수를 자동으로 조정합니다.
+- Cluster Autoscaler는 `Pending` 상태로 남는 Pod를 감지하면 노드를 늘리고, 반대로 여유 노드가 오래 유지되면 노드를 줄입니다.
+- 이 디렉터리는 `eksdemo1` 클러스터에서 `worker node 1개`로 시작한 뒤, `Jupyter Notebook Pod 8개`를 강제로 만들어 `node 4개`까지 scale-up 되는 흐름을 확인하는 실습입니다.
 
-## Step-02: NodeGroup에 --asg-access가 있는지 확인
-- 클러스터 또는 노드 그룹 생성 시 `--asg-access` 파라미터가 포함되어 있는지 확인합니다.
-- 클러스터 노드 그룹을 생성할 때 설정한 내용 확인
+## Step-02: 현재 실습 기준
+- 클러스터: `eksdemo1`
+- 리전: `ap-northeast-2`
+- nodegroup: `ng-eecfef49`
+- 시작 상태: `min=1`, `desired=1`
+- scale-up 허용 범위: `max=4`
 
-### --asg-access 태그를 사용하면?
-- cluster-autoscaler용 IAM 정책이 활성화됩니다.
-- 노드 그룹 IAM 역할에서 해당 정책이 있는지 확인합니다.
-- Services -> IAM -> Roles -> eksctl-eksdemo1-nodegroup-XXXXXX 이동
-- **Permissions** 탭에서 `eksctl-eksdemo1-nodegroup-eksdemo1-ng-private1-PolicyAutoScaling` 인라인 정책이 있어야 합니다.
+## Step-03: 포함된 파일
+- `kube-manifests/01-kubenginx-Deployment-Service.yml`
+  기존 간단한 웹앱 예제
+- `kube-manifests/02-cluster-autoscaler-autodiscover.yml`
+  EKS autodiscover 방식 Cluster Autoscaler 매니페스트
+- `kube-manifests/03-jupyter-notebook-scale-test.yml`
+  autoscaling 테스트용 Jupyter Notebook 8개 배포 매니페스트
+- `iam/cluster-autoscaler-node-role-policy.json`
+  node IAM role에 붙일 autoscaler용 정책 예시
 
-## Step-03: Cluster Autoscaler 배포
-```
-# 클러스터에 Cluster Autoscaler 배포
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
+## Step-04: NodeGroup IAM 및 ASG 준비
+- node IAM role에 autoscaler 정책이 있어야 합니다.
+- ASG에는 아래 태그가 있어야 autodiscover가 동작합니다.
+  - `k8s.io/cluster-autoscaler/enabled=true`
+  - `k8s.io/cluster-autoscaler/eksdemo1=owned`
+- nodegroup 최대 노드 수가 `4` 이상이어야 이번 테스트가 성립합니다.
 
-# cluster-autoscaler.kubernetes.io/safe-to-evict 어노테이션 추가
-kubectl -n kube-system annotate deployment.apps/cluster-autoscaler cluster-autoscaler.kubernetes.io/safe-to-evict="false"
-```
-## Step-04: Cluster Autoscaler Deployment 편집 (클러스터 이름 및 파라미터 추가)
-```
-kubectl -n kube-system edit deployment.apps/cluster-autoscaler
-```
-- **클러스터 이름 추가**
-```yml
-# 변경 전
-        - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/<YOUR CLUSTER NAME>
+```bash
+eksctl get nodegroup --cluster eksdemo1 --region ap-northeast-2
 
-# 변경 후
-        - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/eksdemo1
-```
-
-- **파라미터 2개 추가**
-```yml
-        - --balance-similar-node-groups
-        - --skip-nodes-with-system-pods=false
-```
-- **참고 예시**
-```yml
-    spec:
-      containers:
-      - command:
-        - ./cluster-autoscaler
-        - --v=4
-        - --stderrthreshold=info
-        - --cloud-provider=aws
-        - --skip-nodes-with-local-storage=false
-        - --expander=least-waste
-        - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/eksdemo1
-        - --balance-similar-node-groups
-        - --skip-nodes-with-system-pods=false
+aws autoscaling describe-auto-scaling-groups \
+  --auto-scaling-group-names eks-ng-eecfef49-0aceb7d1-6580-a7fd-6de2-2ed37dd10eb0 \
+  --region ap-northeast-2
 ```
 
-## Step-05: 현재 EKS 클러스터 버전에 맞는 Cluster Autoscaler 이미지 설정
-- https://github.com/kubernetes/autoscaler/releases 를 확인합니다.
-- 클러스터 버전에 맞는 릴리스 버전을 찾아 업데이트합니다.
-- 예: 클러스터 버전이 1.16이면 Cluster Autoscaler 버전은 1.16.5
-```
-# 템플릿
-# Cluster Autoscaler 이미지 버전 업데이트
-kubectl -n kube-system set image deployment.apps/cluster-autoscaler cluster-autoscaler=us.gcr.io/k8s-artifacts-prod/autoscaling/cluster-autoscaler:v1.XY.Z
+## Step-05: Cluster Autoscaler 배포
+- 이 저장소에 준비된 매니페스트를 바로 적용합니다.
+- EKS `1.34` 기준으로 `cluster-autoscaler:v1.34.1` 이미지를 사용합니다.
 
+```bash
+kubectl apply -f kube-manifests/02-cluster-autoscaler-autodiscover.yml
 
-# Cluster Autoscaler 이미지 버전 업데이트
-kubectl -n kube-system set image deployment.apps/cluster-autoscaler cluster-autoscaler=us.gcr.io/k8s-artifacts-prod/autoscaling/cluster-autoscaler:v1.16.5
+kubectl -n kube-system get deploy,pods -l app=cluster-autoscaler -o wide
+kubectl -n kube-system logs deployment/cluster-autoscaler --tail=50
 ```
 
-## Step-06: 이미지 버전 업데이트 확인
-```
-kubectl -n kube-system get deployment.apps/cluster-autoscaler -o yaml
-```
-- **샘플 일부 출력**
-```yml
-    spec:
-      containers:
-      - command:
-        - ./cluster-autoscaler
-        - --v=4
-        - --stderrthreshold=info
-        - --cloud-provider=aws
-        - --skip-nodes-with-local-storage=false
-        - --expander=least-waste
-        - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/eksdemo1
-        - --balance-similar-node-groups
-        - --skip-nodes-with-system-pods=false
-        image: us.gcr.io/k8s-artifacts-prod/autoscaling/cluster-autoscaler:v1.16.5
+## Step-06: Jupyter 8개로 scale-up 테스트
+- 아래 매니페스트는 Notebook Pod 8개를 한 번에 만듭니다.
+- 각 Pod는 `cpu 500m`, `memory 1Gi`를 요청하므로, node 1개로는 수용할 수 없어 `Pending`이 발생합니다.
+- 그 순간 Cluster Autoscaler가 nodegroup을 `1 -> 4`로 확장합니다.
+
+```bash
+kubectl apply -f kube-manifests/03-jupyter-notebook-scale-test.yml
+
+kubectl get deploy,rs,pods,svc -l app=ca-jupyter-notebook -o wide
+kubectl get nodes -o wide
+kubectl -n kube-system logs deployment/cluster-autoscaler --tail=150
+kubectl get events --sort-by=.lastTimestamp | tail -n 30
 ```
 
-## Step-07: Cluster Autoscaler 로그 확인
+## Step-07: 실제로 무엇이 보여야 하나
+
+### 1. 처음에는 Pod 8개가 `Pending`
+```bash
+kubectl get pods -l app=ca-jupyter-notebook -o wide
 ```
-kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
-```
-- 샘플 로그 참고
+
+예상 상태:
+- `8/8` 생성됨
+- 대부분 `Pending`
+- `NODE` 컬럼은 비어 있음
+
+### 2. Cluster Autoscaler 로그에서 scale-up 감지
+아래와 비슷한 로그가 보여야 합니다.
+
 ```log
-I0607 09:14:37.793323       1 pre_filtering_processor.go:66] Skipping ip-192-168-60-30.ec2.internal - node group min size reached
-I0607 09:14:37.793332       1 pre_filtering_processor.go:66] Skipping ip-192-168-27-213.ec2.internal - node group min size reached
-I0607 09:14:37.793408       1 static_autoscaler.go:440] Scale down status: unneededOnly=true lastScaleUpTime=2020-06-07 09:12:27.367461648 +0000 UTC m=+37.138078060 lastScaleDownDeleteTime=2020-06-07 09:12:27.367461724 +0000 UTC m=+37.138078135 lastScaleDownFailTime=2020-06-07 09:12:27.367461801 +0000 UTC m=+37.138078213 scaleDownForbidden=false isDeleteInProgress=false scaleDownInCooldown=true
-I0607 09:14:47.803891       1 static_autoscaler.go:192] Starting main loop
-I0607 09:14:47.804234       1 utils.go:590] No pod using affinity / antiaffinity found in cluster, disabling affinity predicate for this loop
-I0607 09:14:47.804251       1 filter_out_schedulable.go:65] Filtering out schedulables
-I0607 09:14:47.804319       1 filter_out_schedulable.go:130] 0 other pods marked as unschedulable can be scheduled.
-I0607 09:14:47.804343       1 filter_out_schedulable.go:130] 0 other pods marked as unschedulable can be scheduled.
-I0607 09:14:47.804351       1 filter_out_schedulable.go:90] No schedulable pods
-I0607 09:14:47.804366       1 static_autoscaler.go:334] No unschedulable pods
-I0607 09:14:47.804376       1 static_autoscaler.go:381] Calculating unneeded nodes
-I0607 09:14:47.804392       1 pre_filtering_processor.go:66] Skipping ip-192-168-60-30.ec2.internal - node group min size reached
-I0607 09:14:47.804401       1 pre_filtering_processor.go:66] Skipping ip-192-168-27-213.ec2.internal - node group min size reached
-I0607 09:14:47.804460       1 static_autoscaler.go:440] Scale down status: unneededOnly=true lastScaleUpTime=2020-06-07 09:12:27.367461648 +0000 UTC m=+37.138078060 lastScaleDownDeleteTime=2020-06-07 09:12:27.367461724 +0000 UTC m=+37.138078135 lastScaleDownFailTime=2020-06-07 09:12:27.367461801 +0000 UTC m=+37.138078213 scaleDownForbidden=false isDeleteInProgress=false scaleDownInCooldown=true
-
+Found 27 pods in the cluster: 19 scheduled, 8 unschedulable
+Final scale-up plan: [{eks-ng-eecfef49-0aceb7d1-6580-a7fd-6de2-2ed37dd10eb0 1->4 (max: 4)}]
+Scale-up: setting group eks-ng-eecfef49-0aceb7d1-6580-a7fd-6de2-2ed37dd10eb0 size to 4
 ```
 
-## Step-08: 간단한 애플리케이션 배포
-```
-# 애플리케이션 배포
-kubectl apply -f kube-manifests/
+### 3. ASG desired capacity 증가 확인
+```bash
+aws autoscaling describe-auto-scaling-groups \
+  --auto-scaling-group-names eks-ng-eecfef49-0aceb7d1-6580-a7fd-6de2-2ed37dd10eb0 \
+  --region ap-northeast-2 \
+  --query 'AutoScalingGroups[0].{Min:MinSize,Max:MaxSize,Desired:DesiredCapacity,Instances:length(Instances)}'
 ```
 
-## Step-09: 클러스터 스케일 업: 애플리케이션을 30개 Pod로 확장
-- 2~3분 내에 새 노드가 순차적으로 추가되고, Pod가 그 노드에 스케줄링됩니다.
-- 최대 노드 수는 노드 그룹 생성 시 지정한 4개입니다.
-```
-# 터미널 1: Cluster Autoscaler 로그 모니터링
-kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
+예상 결과:
+- `Min=1`
+- `Max=4`
+- `Desired=4`
 
-# 터미널 2: 데모 애플리케이션을 30개 Pod로 확장
-kubectl get pods
-kubectl get nodes 
-kubectl scale --replicas=30 deploy ca-demo-deployment 
-kubectl get pods
-
-# 터미널 2: 노드 확인
+### 4. 새 노드가 추가되고 Pod가 배치됨
+```bash
 kubectl get nodes -o wide
+kubectl get pods -l app=ca-jupyter-notebook -o wide
 ```
-## Step-10: 클러스터 스케일 다운: 애플리케이션을 1개 Pod로 축소
-- 쿨다운으로 인해 5~20분 정도 소요될 수 있으며, 노드 그룹 생성 시 설정한 최소 노드 수(2개)까지 줄어듭니다.
-```
-# 터미널 1: Cluster Autoscaler 로그 모니터링
-kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
 
-# 터미널 2: 데모 애플리케이션을 1개 Pod로 축소
-kubectl scale --replicas=1 deploy ca-demo-deployment 
+예상 흐름:
+- 기존 1개 node + 새 node 3개 생성
+- 새 node는 잠시 `NotReady` 후 `Ready`
+- Jupyter Pod는 `Pending -> ContainerCreating -> Running`
 
-# 터미널 2: 노드 확인
+## Step-08: 이번 테스트에서 실제 확인된 예시
+- 초기 node 수: `1`
+- Jupyter Notebook 배포: `8 replicas`
+- Cluster Autoscaler 로그:
+  - `8 unschedulable`
+  - `Estimated 3 nodes needed`
+  - `1->4 (max: 4)` scale-up 실행
+- ASG 실제 상태:
+  - `DesiredCapacity: 4`
+- node 상태:
+  - 기존 1개 + 신규 3개 생성 확인
+
+## Step-09: scale-down 실습
+- scale-down은 즉시 되지 않고 cooldown이 있어 몇 분 이상 걸릴 수 있습니다.
+- 테스트가 끝나면 Jupyter Deployment를 줄이거나 삭제해서 autoscaler가 불필요 노드를 줄이게 할 수 있습니다.
+
+```bash
+kubectl scale deployment ca-jupyter-notebook --replicas=1
+
+kubectl get pods -l app=ca-jupyter-notebook -o wide
 kubectl get nodes -o wide
+kubectl -n kube-system logs deployment/cluster-autoscaler --tail=150
 ```
 
-## Step-11: 정리
-- Cluster Autoscaler는 그대로 두고 애플리케이션만 제거합니다.
+또는 전체 삭제:
+
+```bash
+kubectl delete -f kube-manifests/03-jupyter-notebook-scale-test.yml
 ```
-kubectl delete -f kube-manifests/
+
+## Step-10: 정리
+```bash
+kubectl delete -f kube-manifests/03-jupyter-notebook-scale-test.yml
+kubectl delete -f kube-manifests/02-cluster-autoscaler-autodiscover.yml
 ```
+
+## 참고
+- 지금 테스트는 `Jupyter Pod 8개`를 이용해 일부러 스케줄링 부족을 만드는 방식입니다.
+- `1 node`로 시작해야 autoscaler 동작이 가장 잘 보입니다.
+- 노드가 `Ready`가 되기 전까지는 Pod가 잠시 `Pending` 또는 `ContainerCreating` 상태로 보이는 것이 정상입니다.

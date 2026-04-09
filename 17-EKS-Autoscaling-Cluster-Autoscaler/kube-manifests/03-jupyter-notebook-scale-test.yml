@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ca-jupyter-notebook
+  labels:
+    app: ca-jupyter-notebook
+spec:
+  replicas: 8
+  selector:
+    matchLabels:
+      app: ca-jupyter-notebook
+  template:
+    metadata:
+      labels:
+        app: ca-jupyter-notebook
+    spec:
+      containers:
+      - name: notebook
+        image: 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/jupyter-minimal-notebook:latest
+        ports:
+        - containerPort: 8888
+        args:
+        - start-notebook.py
+        - --ServerApp.token=
+        - --ServerApp.allow_origin=*
+        - --ServerApp.allow_remote_access=True
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ca-jupyter-notebook
+  labels:
+    app: ca-jupyter-notebook
+spec:
+  type: ClusterIP
+  selector:
+    app: ca-jupyter-notebook
+  ports:
+  - port: 8888
+    targetPort: 8888

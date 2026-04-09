@@ -162,7 +162,85 @@ curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-i
 curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/eksdemo1/;s/{{region_name}}/ap-northeast-2/" | kubectl delete -f -
 ```
 
-## Step-11: 애플리케이션 정리
+## Step-11: Prometheus + Grafana로 EKS Node / Pod 메트릭 시각화 추가
+- CloudWatch Container Insights는 그대로 유지하고, 별도로 `Prometheus + Grafana`를 `monitoring` 네임스페이스에 올립니다.
+- 이 구성은 현재 `eksdemo1`의 node, pod, Jupyter autoscaling Pod 상태를 Grafana 대시보드로 시각화합니다.
+- 포함된 컴포넌트
+  - `kube-state-metrics`
+  - `node-exporter`
+  - `prometheus-server`
+  - `grafana`
+
+### 배포 파일
+```bash
+kubectl apply -f kube-manifests/10-monitoring-namespace.yml
+kubectl apply -f kube-manifests/11-kube-state-metrics.yml
+kubectl apply -f kube-manifests/12-node-exporter.yml
+kubectl apply -f kube-manifests/13-prometheus.yml
+kubectl apply -f kube-manifests/14-grafana.yml
+```
+
+### 배포 상태 확인
+```bash
+kubectl get pods -n monitoring
+kubectl get svc -n monitoring
+```
+
+### Grafana 접속 주소 확인
+```bash
+kubectl get svc grafana -n monitoring
+kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+```
+
+### Grafana 기본 계정
+- ID: `admin`
+- Password: `admin1234`
+
+### 기본 제공 대시보드
+- `EKS Node and Pod Overview`
+  - Node CPU Usage
+  - Node Memory Usage
+  - Pod Phase Count
+  - Top Pod CPU Usage
+  - Top Pod Memory Usage
+- `EKS Jupyter Autoscaling`
+  - `ca-jupyter-notebook` Pod의 Running / Pending 수
+  - Jupyter Pod별 CPU 사용량
+  - Jupyter Pod별 메모리 사용량
+
+### Prometheus 확인
+```bash
+kubectl port-forward -n monitoring svc/prometheus-server 9090:9090
+```
+
+- 브라우저에서 `http://localhost:9090`
+- 예시 PromQL
+```promql
+100 * avg by (instance) (1 - rate(node_cpu_seconds_total{mode="idle"}[5m]))
+```
+
+```promql
+topk(10, sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{container!="",image!=""}[5m])))
+```
+
+```promql
+topk(10, sum by (namespace, pod) (container_memory_working_set_bytes{container!="",image!=""}))
+```
+
+### 실습 팁
+- `17-EKS-Autoscaling-Cluster-Autoscaler`에서 만든 `ca-jupyter-notebook` 8개 Pod가 떠 있는 상태면 Grafana에서 autoscaling 결과를 바로 볼 수 있습니다.
+- 노드가 늘어나는 과정은 `Node CPU Usage`, `Pod Phase Count`, `EKS Jupyter Autoscaling` 대시보드에서 확인하기 좋습니다.
+
+## Step-12: Prometheus / Grafana 정리
+```bash
+kubectl delete -f kube-manifests/14-grafana.yml
+kubectl delete -f kube-manifests/13-prometheus.yml
+kubectl delete -f kube-manifests/12-node-exporter.yml
+kubectl delete -f kube-manifests/11-kube-state-metrics.yml
+kubectl delete -f kube-manifests/10-monitoring-namespace.yml
+```
+
+## Step-13: 애플리케이션 정리
 ```
 # 앱 삭제
 kubectl delete -f  kube-manifests/
