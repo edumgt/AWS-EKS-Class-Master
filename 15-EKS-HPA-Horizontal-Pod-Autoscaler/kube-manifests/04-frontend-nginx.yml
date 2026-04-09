@@ -1,0 +1,530 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jupyter-frontend-nginx-config
+data:
+  default.conf: |
+    server {
+      listen 80;
+      server_name _;
+
+      root /usr/share/nginx/html;
+      index index.html;
+
+      location / {
+        try_files $uri $uri/ /index.html;
+      }
+
+      location /api/ {
+        rewrite ^/api/(.*)$ /$1 break;
+        proxy_pass http://jupyter-manager-service;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+      }
+
+      location /lab {
+        proxy_pass http://jupyter-manager-service;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+      }
+
+      location /session/ {
+        proxy_pass http://jupyter-manager-service;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+      }
+
+      location /users/ {
+        proxy_pass http://jupyter-manager-service;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+      }
+
+      location /user/ {
+        proxy_pass http://jupyter-manager-service;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600;
+      }
+    }
+  index.html: |
+    <!doctype html>
+    <html lang="ko">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Jupyter Session Launcher</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="stylesheet" href="https://uicdn.toast.com/grid/latest/tui-grid.min.css" />
+      <script src="https://uicdn.toast.com/grid/latest/tui-grid.min.js"></script>
+    </head>
+    <body class="min-h-screen bg-slate-950 text-slate-100">
+      <div class="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-10">
+        <header class="mb-10">
+          <div class="inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">
+            Jupyter Session Frontend
+          </div>
+          <h1 class="mt-4 text-4xl font-black tracking-tight text-white sm:text-5xl">
+            User ID로 세션을 만들고 바로 Jupyter Lab 실행
+          </h1>
+          <p class="mt-3 max-w-2xl text-sm text-slate-300 sm:text-base">
+            이 화면은 Backend API를 호출해 session_id를 생성하고, 생성된 session_id로
+            <code class="rounded bg-slate-800 px-1 py-0.5 text-cyan-300">/lab?sessionid=xxxx</code>
+            링크를 바로 실행합니다.
+          </p>
+        </header>
+
+        <main class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <section class="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-cyan-950/20">
+            <div class="mb-6">
+              <h2 class="text-xl font-bold text-white">세션 생성</h2>
+              <p class="mt-2 text-sm text-slate-300">
+                사용자 ID를 입력하면 Backend API
+                <code class="rounded bg-slate-800 px-1 py-0.5 text-cyan-300">POST /users/{user_id}/session</code>
+                을 호출합니다.
+              </p>
+            </div>
+
+            <form id="session-form" class="space-y-4">
+              <div>
+                <label for="userId" class="mb-2 block text-sm font-medium text-slate-200">User ID</label>
+                <input
+                  id="userId"
+                  name="userId"
+                  type="text"
+                  placeholder="abc123"
+                  class="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-base text-white outline-none ring-0 transition focus:border-cyan-400"
+                  required
+                />
+              </div>
+
+              <div class="flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  class="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
+                >
+                  세션 생성
+                </button>
+                <button
+                  id="launch-button"
+                  type="button"
+                  class="rounded-2xl border border-cyan-400/40 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
+                  disabled
+                >
+                  Jupyter Lab 열기
+                </button>
+              </div>
+            </form>
+
+            <div id="status-banner" class="mt-6 hidden rounded-2xl border px-4 py-3 text-sm"></div>
+            <div id="waiting-panel" class="mt-6 hidden rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-amber-100">
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full border border-amber-300/40 bg-amber-300/10">
+                  <svg class="h-5 w-5 animate-spin text-amber-200" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"></circle>
+                    <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-sm font-semibold">Jupyter Lab 준비 중</div>
+                  <div class="text-xs text-amber-100/80">세션이 running 상태가 되면 버튼이 자동으로 활성화됩니다.</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-xl font-bold text-white">세션 결과</h2>
+              <span id="session-state" class="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">
+                waiting
+              </span>
+            </div>
+
+            <div class="space-y-4 text-sm">
+              <div>
+                <div class="mb-1 text-slate-400">User ID</div>
+                <div id="result-user" class="rounded-2xl bg-slate-950 px-4 py-3 text-slate-200">-</div>
+              </div>
+              <div>
+                <div class="mb-1 text-slate-400">Session ID</div>
+                <div id="result-session" class="rounded-2xl bg-slate-950 px-4 py-3 font-mono text-cyan-300">-</div>
+              </div>
+              <div>
+                <div class="mb-1 text-slate-400">Launch URL</div>
+                <a id="result-launch" href="#" target="_blank" rel="noreferrer" class="block break-all rounded-2xl bg-slate-950 px-4 py-3 text-cyan-300 underline decoration-cyan-600 underline-offset-4">
+                  -
+                </a>
+              </div>
+              <div>
+                <div class="mb-1 text-slate-400">Status URL</div>
+                <a id="result-status" href="#" target="_blank" rel="noreferrer" class="block break-all rounded-2xl bg-slate-950 px-4 py-3 text-slate-300">
+                  -
+                </a>
+              </div>
+            </div>
+
+            <div class="mt-6 rounded-2xl border border-slate-800 bg-slate-950/80 p-4">
+              <div class="mb-2 text-sm font-semibold text-slate-200">실행 방법</div>
+              <ol class="list-decimal space-y-2 pl-5 text-sm text-slate-400">
+                <li>User ID를 입력하고 세션 생성</li>
+                <li>session_id가 반환되면 Launch 버튼 클릭</li>
+                <li>새 탭에서 Jupyter Lab 실행</li>
+              </ol>
+            </div>
+          </section>
+        </main>
+
+        <section class="mt-8 rounded-3xl border border-white/10 bg-slate-900/80 p-6">
+          <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div class="inline-flex rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-rose-200">
+                Admin Console
+              </div>
+              <h2 class="mt-3 text-2xl font-black text-white">전체 사용자 Jupyter 사용 현황</h2>
+              <p class="mt-2 text-sm text-slate-300">
+                관리자 계정으로 로그인하면 전체 사용자 세션, 사용 시간, CPU, 메모리, 디스크 정보를 TUI Grid로 볼 수 있습니다.
+              </p>
+            </div>
+            <button
+              id="refresh-admin"
+              type="button"
+              class="rounded-2xl border border-rose-400/40 px-4 py-2 text-sm font-bold text-rose-200 transition hover:bg-rose-400/10"
+            >
+              현황 새로고침
+            </button>
+          </div>
+
+          <div class="grid gap-4 lg:grid-cols-[0.45fr_1fr]">
+            <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+              <h3 class="text-sm font-bold text-white">관리자 로그인</h3>
+              <div class="mt-4 space-y-3">
+                <div>
+                  <label class="mb-1 block text-xs text-slate-400">Admin ID</label>
+                  <input id="admin-user" type="text" value="admin" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs text-slate-400">Password</label>
+                  <input id="admin-pass" type="password" value="123456" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
+                </div>
+                <button
+                  id="admin-login"
+                  type="button"
+                  class="w-full rounded-2xl bg-rose-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-rose-300"
+                >
+                  관리자 현황 조회
+                </button>
+              </div>
+              <div id="admin-banner" class="mt-4 hidden rounded-2xl border px-4 py-3 text-sm"></div>
+            </div>
+
+            <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+              <div class="mb-3 flex items-center justify-between">
+                <div class="text-sm font-semibold text-slate-200">실시간 사용자 현황 Grid</div>
+                <div id="admin-summary" class="text-xs text-slate-400">로그인 후 데이터 로드</div>
+              </div>
+              <div id="admin-grid" class="overflow-hidden rounded-xl border border-slate-800"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <script>
+        const form = document.getElementById("session-form");
+        const launchButton = document.getElementById("launch-button");
+        const stateEl = document.getElementById("session-state");
+        const banner = document.getElementById("status-banner");
+
+        const resultUser = document.getElementById("result-user");
+        const resultSession = document.getElementById("result-session");
+        const resultLaunch = document.getElementById("result-launch");
+        const resultStatus = document.getElementById("result-status");
+        const waitingPanel = document.getElementById("waiting-panel");
+        const adminUser = document.getElementById("admin-user");
+        const adminPass = document.getElementById("admin-pass");
+        const adminLogin = document.getElementById("admin-login");
+        const adminBanner = document.getElementById("admin-banner");
+        const adminSummary = document.getElementById("admin-summary");
+        const refreshAdmin = document.getElementById("refresh-admin");
+
+        let currentLaunchUrl = "";
+        let currentSessionId = "";
+        let pollTimer = null;
+        let adminAuthHeader = "";
+        let adminGrid = null;
+
+        function setBanner(message, kind) {
+          banner.classList.remove("hidden", "border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100", "border-rose-400/40", "bg-rose-400/10", "text-rose-100");
+          if (kind === "success") {
+            banner.classList.add("border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100");
+          } else {
+            banner.classList.add("border-rose-400/40", "bg-rose-400/10", "text-rose-100");
+          }
+          banner.textContent = message;
+        }
+
+        function setState(text) {
+          stateEl.textContent = text;
+        }
+
+        function setAdminBanner(message, kind) {
+          adminBanner.classList.remove("hidden", "border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100", "border-rose-400/40", "bg-rose-400/10", "text-rose-100");
+          if (kind === "success") {
+            adminBanner.classList.add("border-emerald-400/40", "bg-emerald-400/10", "text-emerald-100");
+          } else {
+            adminBanner.classList.add("border-rose-400/40", "bg-rose-400/10", "text-rose-100");
+          }
+          adminBanner.textContent = message;
+        }
+
+        function setWaiting(isWaiting) {
+          waitingPanel.classList.toggle("hidden", !isWaiting);
+        }
+
+        function stopPolling() {
+          if (pollTimer) {
+            clearTimeout(pollTimer);
+            pollTimer = null;
+          }
+        }
+
+        async function pollSessionStatus(sessionId) {
+          try {
+            const response = await fetch(`/api/session/${encodeURIComponent(sessionId)}`, {
+              headers: { accept: "application/json" }
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            setState(data.status);
+            resultStatus.textContent = `/session/${data.session_id || sessionId}`;
+
+            if (data.can_launch) {
+              launchButton.disabled = false;
+              setWaiting(false);
+              setBanner("Jupyter Lab 준비 완료. Launch 버튼을 눌러 실행하세요.", "success");
+              stopPolling();
+              return;
+            }
+
+            setWaiting(true);
+            launchButton.disabled = true;
+            pollTimer = setTimeout(() => pollSessionStatus(sessionId), 3000);
+          } catch (error) {
+            setWaiting(false);
+            setBanner(`세션 상태 확인 실패: ${error.message}`, "error");
+            stopPolling();
+          }
+        }
+
+        function ensureAdminGrid() {
+          if (adminGrid) return adminGrid;
+          adminGrid = new tui.Grid({
+            el: document.getElementById("admin-grid"),
+            bodyHeight: 420,
+            scrollX: true,
+            scrollY: true,
+            rowHeaders: ["rowNum"],
+            columns: [
+              { header: "Account", name: "username", minWidth: 120 },
+              { header: "Session", name: "session_id", minWidth: 140 },
+              { header: "Status", name: "status", minWidth: 100 },
+              { header: "Used Min", name: "usage_minutes", minWidth: 90, align: "right" },
+              { header: "CPU(m)", name: "cpu_millicores", minWidth: 90, align: "right" },
+              { header: "Mem(Mi)", name: "memory_mib", minWidth: 90, align: "right" },
+              { header: "Disk Used(Gi)", name: "disk_used_gib", minWidth: 110, align: "right" },
+              { header: "Disk Free(Gi)", name: "disk_available_gib", minWidth: 110, align: "right" },
+              { header: "Disk %", name: "disk_usage_percent", minWidth: 90, align: "right" },
+              { header: "Pod", name: "pod_name", minWidth: 220 },
+              { header: "PVC", name: "pvc_name", minWidth: 180 }
+            ],
+            data: []
+          });
+          return adminGrid;
+        }
+
+        async function loadAdminUsage() {
+          if (!adminAuthHeader) {
+            setAdminBanner("관리자 로그인 정보가 필요합니다.", "error");
+            return;
+          }
+          try {
+            const response = await fetch("/api/admin/usage", {
+              headers: {
+                accept: "application/json",
+                authorization: adminAuthHeader
+              }
+            });
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            ensureAdminGrid().resetData(data.rows || []);
+            adminSummary.textContent = `총 ${data.total}개 세션`;
+            setAdminBanner("관리자 현황 데이터를 불러왔습니다.", "success");
+          } catch (error) {
+            adminSummary.textContent = "조회 실패";
+            setAdminBanner(`관리자 조회 실패: ${error.message}`, "error");
+          }
+        }
+
+        launchButton.addEventListener("click", () => {
+          if (currentLaunchUrl) {
+            window.open(currentLaunchUrl, "_blank", "noopener,noreferrer");
+          }
+        });
+
+        adminLogin.addEventListener("click", async () => {
+          const username = adminUser.value.trim();
+          const password = adminPass.value;
+          adminAuthHeader = `Basic ${btoa(`${username}:${password}`)}`;
+          await loadAdminUsage();
+        });
+
+        refreshAdmin.addEventListener("click", async () => {
+          await loadAdminUsage();
+        });
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const userId = document.getElementById("userId").value.trim();
+
+          if (!userId) {
+            setBanner("User ID를 입력하세요.", "error");
+            return;
+          }
+
+          launchButton.disabled = true;
+          stopPolling();
+          setWaiting(false);
+          setState("creating");
+          setBanner("세션을 생성하는 중입니다...", "success");
+
+          try {
+            const response = await fetch(`/api/users/${encodeURIComponent(userId)}/session`, {
+              method: "POST",
+              headers: {
+                accept: "application/json"
+              }
+            });
+
+            if (!response.ok) {
+              const text = await response.text();
+              throw new Error(text || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            currentLaunchUrl = data.launch_url;
+            currentSessionId = data.session_id;
+
+            resultUser.textContent = data.user_id;
+            resultSession.textContent = data.session_id;
+            resultLaunch.textContent = data.launch_url;
+            resultLaunch.href = data.launch_url;
+            resultStatus.textContent = data.status_url;
+            resultStatus.href = data.status_url;
+
+            setState(data.status);
+            launchButton.disabled = true;
+            setWaiting(true);
+            setBanner("세션이 생성되었습니다. Jupyter Lab 준비가 끝날 때까지 잠시 기다려 주세요.", "success");
+            pollSessionStatus(data.session_id);
+          } catch (error) {
+            setState("error");
+            setWaiting(false);
+            setBanner(`세션 생성 실패: ${error.message}`, "error");
+          }
+        });
+      </script>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyter-session-frontend
+  labels:
+    app: jupyter-session-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyter-session-frontend
+  template:
+    metadata:
+      labels:
+        app: jupyter-session-frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.27-alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+        - name: frontend-html
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: jupyter-frontend-nginx-config
+          items:
+          - key: default.conf
+            path: default.conf
+      - name: frontend-html
+        configMap:
+          name: jupyter-frontend-nginx-config
+          items:
+          - key: index.html
+            path: index.html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyter-session-frontend-service
+  labels:
+    app: jupyter-session-frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: jupyter-session-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP

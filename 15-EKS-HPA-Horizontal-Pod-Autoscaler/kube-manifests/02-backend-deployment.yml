@@ -7,7 +7,7 @@ metadata:
     app: jupyter-manager
     tier: backend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: jupyter-manager
@@ -33,6 +33,14 @@ spec:
               fieldPath: metadata.namespace
         - name: JUPYTER_IMAGE
           value: "086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/jupyter-minimal-notebook:latest"
+        - name: JUPYTER_PVC_SIZE
+          value: "5Gi"
+        - name: JUPYTER_STORAGE_CLASS
+          value: "gp2"
+        - name: MAX_CONCURRENT_JUPYTER_PODS
+          value: "9"
+        - name: QUEUE_SLOT_MINUTES
+          value: "15"
         resources:
           requests:
             memory: "256Mi"

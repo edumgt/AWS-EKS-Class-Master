@@ -23,8 +23,9 @@
 **주요 기능:**
 1. **FastAPI 백엔드**: 사용자 요청을 처리하고 Jupyter Lab Pod를 관리
 2. **동적 Pod 생성**: 각 사용자에게 독립적인 Jupyter Lab 환경 제공
-3. **HPA 자동 스케일링**: 트래픽 증가 시 백엔드 Pod를 자동으로 확장
-4. **부하 테스트**: Python 스크립트로 HPA 동작 검증
+3. **사용자별 작업물 유지**: 같은 `user_id`로 재접속하면 기존 작업 디렉터리를 다시 사용
+4. **HPA 자동 스케일링**: 트래픽 증가 시 백엔드 Pod를 자동으로 확장
+5. **부하 테스트**: Python 스크립트로 HPA 동작 검증
 
 ---
 
@@ -122,7 +123,7 @@ AWS_REGION=ap-northeast-2 IMAGE_TAG=v1.0.0 ./build-and-push.sh
 ## Step-04: 애플리케이션 배포
 
 ### 4.1 RBAC 및 ServiceAccount 생성
-FastAPI 백엔드가 Jupyter Lab Pod를 생성/삭제할 수 있도록 권한 부여:
+FastAPI 백엔드가 Jupyter Lab Pod, Service, PVC를 생성/삭제할 수 있도록 권한 부여:
 
 ```bash
 # RBAC 설정 적용
@@ -149,7 +150,17 @@ kubectl get svc jupyter-manager-service
 kubectl get svc jupyter-manager-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
-### 4.3 HPA 설정 적용
+### 4.3 Tailwind 기반 Frontend NGINX 배포
+사용자 ID 입력, session_id 확인, Launch 버튼으로 Jupyter Lab 실행을 위한 전용 웹 화면입니다.
+
+```bash
+kubectl apply -f kube-manifests/04-frontend-nginx.yml
+
+# Frontend LoadBalancer 확인
+kubectl get svc jupyter-session-frontend-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+```
+
+### 4.4 HPA 설정 적용
 ```bash
 # HPA 생성
 kubectl apply -f kube-manifests/03-hpa.yml
@@ -177,8 +188,10 @@ kubectl describe hpa jupyter-manager-hpa
 ```bash
 # LoadBalancer URL 환경 변수에 저장
 export BACKEND_URL=http://$(kubectl get svc jupyter-manager-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+export FRONTEND_URL=http://$(kubectl get svc jupyter-session-frontend-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
 echo $BACKEND_URL
+echo $FRONTEND_URL
 ```
 
 ### 5.2 기본 엔드포인트 테스트
@@ -198,7 +211,30 @@ Swagger UI에서는 아래 API를 바로 테스트할 수 있습니다.
 - `GET /session/{session_id}`
 - `GET /lab?sessionid=xxxx`
 
-### 5.3 Jupyter Lab 세션 생성
+### 5.3 Frontend 웹 화면 사용
+브라우저에서 아래 주소로 접속합니다.
+
+```bash
+echo "$FRONTEND_URL"
+```
+
+Frontend 기능:
+- `User ID` 입력
+- Backend API 호출로 session 생성
+- `session_id`와 `launch_url` 표시
+- `Jupyter Lab 열기` 버튼으로 새 탭 실행
+
+Frontend는 내부적으로 아래 API를 호출합니다.
+
+```bash
+POST /api/users/{user_id}/session
+```
+
+같은 `user_id`로 다시 요청하면:
+- 이미 실행 중인 Jupyter Pod가 있으면 기존 세션을 재사용
+- Pod가 없어도 사용자 전용 PVC를 다시 마운트해서 이전 작업물(`/home/jovyan/work`)을 이어서 사용
+
+### 5.4 Jupyter Lab 세션 생성
 ```bash
 # 단일 사용자 세션 생성
 curl -X POST $BACKEND_URL/session/create \
@@ -258,12 +294,14 @@ Swagger로 생성할 때는:
 동작 방식:
 - 사용자가 `session/create` 호출
 - 또는 Swagger에서 `POST /users/{user_id}/session` 호출
-- FastAPI가 사용자 전용 Jupyter Pod와 ClusterIP Service 생성
+- FastAPI가 사용자 전용 PVC를 확인하고, 없으면 생성
+- 같은 user_id의 기존 세션이 있으면 재사용
+- 없으면 사용자 전용 Jupyter Pod와 ClusterIP Service 생성
 - CLB 주소의 `/lab?sessionid=...` 요청을 FastAPI가 받음
 - FastAPI가 해당 세션의 내부 Jupyter Lab으로 프록시
 - 결과적으로 사용자마다 다른 Notebook 세션에 접속
 
-### 5.4 세션 삭제
+### 5.5 세션 삭제
 ```bash
 # 세션 삭제
 curl -X DELETE $BACKEND_URL/session/$SESSION_ID
@@ -271,6 +309,10 @@ curl -X DELETE $BACKEND_URL/session/$SESSION_ID
 # Jupyter Pod 삭제 확인
 kubectl get pods -l app=jupyter-lab
 ```
+
+주의:
+- 세션 삭제는 Pod와 Service만 제거합니다.
+- 사용자 작업물은 PVC에 남아 있으므로, 같은 `user_id`로 다시 접속하면 이어서 작업할 수 있습니다.
 
 ---
 
