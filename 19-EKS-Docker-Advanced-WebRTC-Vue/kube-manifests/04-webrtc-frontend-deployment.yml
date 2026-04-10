@@ -27,6 +27,20 @@ spec:
             # signaling CLB hostname
             - name: VITE_SIGNAL_URL
               value: "ws://a16745688227442f8827d9802e109290-1655988714.ap-northeast-2.elb.amazonaws.com:3001"
+            - name: AWS_REGION
+              value: "ap-northeast-2"
+            - name: CW_CLUSTER_NAME
+              value: "eksdemo2"
+            - name: CW_LOG_NAMESPACE
+              value: "webrtc"
+            - name: CW_LOG_CONTAINERS
+              value: "frontend,signaling"
+            # Application Signals에서 실제 서비스명이 확인된 뒤 교체하세요.
+            - name: CW_APP_SIGNALS_SERVICE
+              value: "REPLACE_WITH_APP_SIGNALS_SERVICE_NAME"
+            # Application Signals의 Environment dimension 값으로 교체하세요.
+            - name: CW_APP_SIGNALS_ENVIRONMENT
+              value: "REPLACE_WITH_APP_SIGNALS_ENVIRONMENT"
           ports:
             - name: http
               containerPort: 80

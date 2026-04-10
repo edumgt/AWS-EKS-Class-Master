@@ -178,3 +178,67 @@ fields @timestamp, kubernetes.namespace_name, kubernetes.pod_name, kubernetes.co
 | sort @timestamp desc
 | limit 100
 ```
+
+## Vue에서 CloudWatch JSON 시계열 표시
+
+프런트 컨테이너는 정적 파일만 서빙하는 대신, Node 기반 `frontend-server.cjs` 에서 아래 API를 제공합니다.
+
+- `GET /api/observability/config`
+- `GET /api/observability/timeseries?rangeMinutes=60&binMinutes=5`
+
+이 API는 두 종류의 데이터를 JSON으로 모아 Vue 모듈에 전달합니다.
+
+- Container Insights 로그 시계열
+  - 로그 그룹: `/aws/containerinsights/<CLUSTER_NAME>/application`
+  - 기본 필터: namespace `webrtc`, container `frontend,signaling`
+- Application Signals 메트릭 시계열
+  - namespace: `ApplicationSignals`
+  - 기본 메트릭: `Latency(p90)`, `Fault(Sum)`, `Error(Sum)`, `Availability`
+
+프런트 Deployment 환경 변수 예시:
+
+```yaml
+env:
+  - name: AWS_REGION
+    value: "ap-northeast-2"
+  - name: CW_CLUSTER_NAME
+    value: "eksdemo2"
+  - name: CW_LOG_NAMESPACE
+    value: "webrtc"
+  - name: CW_LOG_CONTAINERS
+    value: "frontend,signaling"
+  - name: CW_APP_SIGNALS_SERVICE
+    value: "REPLACE_WITH_APP_SIGNALS_SERVICE_NAME"
+  - name: CW_APP_SIGNALS_ENVIRONMENT
+    value: "REPLACE_WITH_APP_SIGNALS_ENVIRONMENT"
+```
+
+중요:
+- `CW_APP_SIGNALS_SERVICE` 와 `CW_APP_SIGNALS_ENVIRONMENT` 는 CloudWatch `Application Signals` 콘솔에서 실제 dimension 값을 확인한 뒤 넣어야 합니다.
+- Node.js 애플리케이션은 Application Signals 런타임 메트릭 수집 대상은 아니지만, 서비스 메트릭과 Container Insights 로그 시계열은 이 방식으로 프런트에 노출할 수 있습니다.
+
+필요 IAM 권한:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:StartQuery",
+        "logs:GetQueryResults",
+        "cloudwatch:GetMetricData"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+프런트 화면에는 아래 항목이 추가됩니다.
+
+- Container Log Volume 시계열
+- Error-like Log Volume 시계열
+- Application Signals `Latency p90`, `Availability`, `Fault Count`
+- 최근 로그 JSON 샘플
