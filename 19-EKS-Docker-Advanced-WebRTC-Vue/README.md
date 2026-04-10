@@ -11,9 +11,9 @@
 - 브라우저 카메라/마이크/화면공유
 
 EKS 구성:
-- `frontend` 컨테이너: Vue + Tailwind WebRTC UI
-- `signaling` 컨테이너: Node WebSocket signaling 서버
-- `Service type=LoadBalancer`: CLB 외부 접속점
+- `frontend` Deployment 1개: Vue + Tailwind WebRTC UI
+- `signaling` Deployment 1개: Node WebSocket signaling 서버
+- `Service type=LoadBalancer` 2개: FE용 CLB, signaling용 CLB
 
 ## Node.js 서버 없이 가능한가?
 
@@ -37,12 +37,13 @@ EKS 구성:
 
 CLB 기준 구성:
 - `Service type=LoadBalancer` 만 사용
+- 프런트와 signaling을 각각 별도 CLB로 분리
 - NLB 전용 annotation 제거
 - legacy EKS service controller 기준으로 Classic Load Balancer 생성을 기대
 
 예시 이미지:
-- `086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/webrtc-vue-frontend:latest`
-- `086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/webrtc-vue-signaling:latest`
+- `edumgt/webrtc-frontend:latest`
+- `edumgt/webrtc-signaling:latest`
 
 ## 업무 Flowchart
 
@@ -50,17 +51,18 @@ CLB 기준 구성:
 flowchart LR
     U1[User A Browser]
     U2[User B Browser]
-    CLB[Public CLB URL]
+    CLBFE[Frontend CLB URL]
+    CLBSIG[Signaling CLB URL]
     FE[Vue Frontend Pod]
     SIG[Node Signaling Pod]
     P2P[Peer-to-Peer Media / Data]
     CW[CloudWatch Container Insights]
 
-    U1 --> CLB
-    U2 --> CLB
-    CLB --> FE
-    FE --> SIG
-    SIG --> FE
+    U1 --> CLBFE
+    U2 --> CLBFE
+    CLBFE --> FE
+    FE --> CLBSIG
+    CLBSIG --> SIG
     FE --> P2P
     P2P --> FE
     FE -. stdout/stderr .-> CW
@@ -77,8 +79,17 @@ flowchart LR
 
 - [01-namespace.yml](/home/AWS-EKS-Class-Master/19-EKS-Docker-Advanced-WebRTC-Vue/kube-manifests/01-namespace.yml)
 - [02-webrtc-deployment.yml](/home/AWS-EKS-Class-Master/19-EKS-Docker-Advanced-WebRTC-Vue/kube-manifests/02-webrtc-deployment.yml)
+- [04-webrtc-frontend-deployment.yml](/home/AWS-EKS-Class-Master/19-EKS-Docker-Advanced-WebRTC-Vue/kube-manifests/04-webrtc-frontend-deployment.yml)
 - [03-webrtc-loadbalancer-service.yml](/home/AWS-EKS-Class-Master/19-EKS-Docker-Advanced-WebRTC-Vue/kube-manifests/03-webrtc-loadbalancer-service.yml)
-  CLB 생성용 Service
+  FE / signaling 각각 CLB 생성용 Service
+
+Fresh start:
+
+```bash
+kubectl delete deployment webrtc-vue webrtc-frontend webrtc-signaling -n webrtc --ignore-not-found
+kubectl delete service webrtc-vue-service webrtc-frontend-service webrtc-signaling-service -n webrtc --ignore-not-found
+kubectl get all -n webrtc
+```
 
 배포:
 
@@ -86,6 +97,15 @@ flowchart LR
 kubectl apply -f /home/AWS-EKS-Class-Master/19-EKS-Docker-Advanced-WebRTC-Vue/kube-manifests/01-namespace.yml
 kubectl apply -f /home/AWS-EKS-Class-Master/19-EKS-Docker-Advanced-WebRTC-Vue/kube-manifests/02-webrtc-deployment.yml
 kubectl apply -f /home/AWS-EKS-Class-Master/19-EKS-Docker-Advanced-WebRTC-Vue/kube-manifests/03-webrtc-loadbalancer-service.yml
+kubectl rollout status deployment/webrtc-signaling -n webrtc
+kubectl get svc webrtc-signaling-service -n webrtc
+kubectl get svc webrtc-signaling-service -n webrtc \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# 04-webrtc-frontend-deployment.yml 의 VITE_SIGNAL_URL 값을
+# ws://<SIGNALING-CLB-HOSTNAME>:3001 형태로 바꾼 뒤 적용
+kubectl apply -f /home/AWS-EKS-Class-Master/19-EKS-Docker-Advanced-WebRTC-Vue/kube-manifests/04-webrtc-frontend-deployment.yml
+kubectl rollout status deployment/webrtc-frontend -n webrtc
 kubectl get pods -n webrtc
 kubectl get svc -n webrtc
 ```
@@ -93,12 +113,19 @@ kubectl get svc -n webrtc
 접속:
 
 ```bash
-kubectl get svc webrtc-vue-service -n webrtc \
+kubectl get svc webrtc-frontend-service -n webrtc \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+kubectl get svc webrtc-signaling-service -n webrtc \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
-- frontend: `http://<ELB-HOSTNAME>`
-- signaling: `ws://<ELB-HOSTNAME>:3001`
+- frontend: `http://<FRONTEND-CLB-HOSTNAME>`
+- signaling: `ws://<SIGNALING-CLB-HOSTNAME>:3001`
+
+중요:
+- 프런트와 signaling이 서로 다른 CLB를 쓰므로 `VITE_SIGNAL_PORT` 만으로는 연결할 수 없습니다.
+- [04-webrtc-frontend-deployment.yml](/home/AWS-EKS-Class-Master/19-EKS-Docker-Advanced-WebRTC-Vue/kube-manifests/04-webrtc-frontend-deployment.yml) 의 `VITE_SIGNAL_URL` 값을 실제 signaling CLB hostname으로 교체한 뒤 frontend Deployment를 적용해야 합니다.
 
 참고:
 - 이 매니페스트는 CLB 기준으로 최대한 단순화했습니다.

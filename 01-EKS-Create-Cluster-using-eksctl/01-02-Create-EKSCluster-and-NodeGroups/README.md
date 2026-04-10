@@ -19,7 +19,7 @@
 eksctl create cluster --name=eksdemo2 \
                       --region=ap-northeast-2 \
                       --zones=ap-northeast-2a,ap-northeast-2b \
-                      --without-nodegroup 
+                      --nodes=1
 
 # 클러스터 목록 확인
 eksctl get cluster                  

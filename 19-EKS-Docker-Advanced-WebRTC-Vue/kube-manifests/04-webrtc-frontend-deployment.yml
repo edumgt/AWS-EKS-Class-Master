@@ -1,41 +1,45 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webrtc-signaling
+  name: webrtc-frontend
   namespace: webrtc
   labels:
-    app: webrtc-signaling
-    app.kubernetes.io/name: webrtc-signaling
+    app: webrtc-frontend
+    app.kubernetes.io/name: webrtc-frontend
     app.kubernetes.io/part-of: docker-advanced-webrtc-vue
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: webrtc-signaling
+      app: webrtc-frontend
   template:
     metadata:
       labels:
-        app: webrtc-signaling
-        app.kubernetes.io/name: webrtc-signaling
+        app: webrtc-frontend
+        app.kubernetes.io/name: webrtc-frontend
         app.kubernetes.io/part-of: docker-advanced-webrtc-vue
     spec:
       containers:
-        - name: signaling
-          image: edumgt/webrtc-signaling:latest
+        - name: frontend
+          image: edumgt/webrtc-frontend:latest
           imagePullPolicy: Always
+          env:
+            # signaling CLB hostname
+            - name: VITE_SIGNAL_URL
+              value: "ws://a16745688227442f8827d9802e109290-1655988714.ap-northeast-2.elb.amazonaws.com:3001"
           ports:
-            - name: signaling
-              containerPort: 3001
+            - name: http
+              containerPort: 80
           readinessProbe:
             httpGet:
-              path: /health
-              port: 3001
+              path: /
+              port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /health
-              port: 3001
+              path: /
+              port: 80
             initialDelaySeconds: 15
             periodSeconds: 20
           resources:
