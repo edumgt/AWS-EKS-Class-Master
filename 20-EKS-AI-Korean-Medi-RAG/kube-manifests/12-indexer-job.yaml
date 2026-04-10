@@ -17,7 +17,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: indexer
-          image: 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/ai-korean-medi-rag-api:latest
+          image: edumgt/ai-korean-medi-rag-app:latest
           imagePullPolicy: Always
           command:
             - python
@@ -29,8 +29,8 @@ spec:
                 name: med-rag-api-config
           resources:
             requests:
-              cpu: "1"
-              memory: "2Gi"
+              cpu: "250m"
+              memory: "512Mi"
             limits:
-              cpu: "2"
-              memory: "4Gi"
+              cpu: "1"
+              memory: "1Gi"

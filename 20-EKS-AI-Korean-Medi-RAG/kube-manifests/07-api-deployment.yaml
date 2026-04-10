@@ -8,6 +8,11 @@ metadata:
     app.kubernetes.io/part-of: ai-korean-medi-rag
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: med-rag-api
@@ -19,8 +24,15 @@ spec:
     spec:
       containers:
         - name: api
-          image: 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/ai-korean-medi-rag-api:latest
+          image: edumgt/ai-korean-medi-rag-app:latest
           imagePullPolicy: Always
+          command:
+            - uvicorn
+            - api.main:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
           ports:
             - containerPort: 8000
               name: http
@@ -31,18 +43,20 @@ spec:
                 name: med-rag-llm-secret
           resources:
             requests:
-              cpu: "500m"
-              memory: "1Gi"
+              cpu: "200m"
+              memory: "512Mi"
             limits:
-              cpu: "2"
-              memory: "4Gi"
+              cpu: "1"
+              memory: "1Gi"
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /healthz
               port: 8000
             initialDelaySeconds: 20
             periodSeconds: 10
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /healthz
               port: 8000
             initialDelaySeconds: 40
             periodSeconds: 20

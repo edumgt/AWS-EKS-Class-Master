@@ -7,10 +7,10 @@ metadata:
     app.kubernetes.io/name: med-rag-api
     app.kubernetes.io/part-of: ai-korean-medi-rag
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
     - name: http
-      port: 8000
+      port: 80
       targetPort: 8000
   selector:
     app.kubernetes.io/name: med-rag-api

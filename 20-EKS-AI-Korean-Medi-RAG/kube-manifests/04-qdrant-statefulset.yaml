@@ -18,6 +18,9 @@ spec:
         app.kubernetes.io/name: qdrant
         app.kubernetes.io/part-of: ai-korean-medi-rag
     spec:
+      volumes:
+        - name: qdrant-data
+          emptyDir: {}
       containers:
         - name: qdrant
           image: qdrant/qdrant:v1.11.3
@@ -28,11 +31,11 @@ spec:
               containerPort: 6334
           resources:
             requests:
-              cpu: "500m"
-              memory: "1Gi"
+              cpu: "200m"
+              memory: "512Mi"
             limits:
               cpu: "1"
-              memory: "2Gi"
+              memory: "1Gi"
           readinessProbe:
             tcpSocket:
               port: 6333
@@ -46,13 +49,3 @@ spec:
           volumeMounts:
             - name: qdrant-data
               mountPath: /qdrant/storage
-  volumeClaimTemplates:
-    - metadata:
-        name: qdrant-data
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        storageClassName: med-rag-ebs-sc
-        resources:
-          requests:
-            storage: 20Gi

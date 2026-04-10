@@ -13,9 +13,7 @@
 - `Qdrant`
   벡터 검색 엔진
 - `FastAPI`
-  `/ask`, `/api/openai-check`, `/docs`
-- `NGINX Web`
-  사용자가 직접 질의하는 화면
+  `/`, `/ask`, `/api/openai-check`, `/docs`
 
 ## 업무 Flowchart
 
@@ -23,18 +21,15 @@
 flowchart LR
     U[User / Swagger / curl]
     CLB[CLB URL]
-    WEB[NGINX Web Pod]
-    API[FastAPI RAG Pod]
+    API[FastAPI + Web UI Pod]
     QD[Qdrant]
     LLM[OpenAI / AWS Secrets Manager]
     CW[CloudWatch Container Insights]
 
     U --> CLB
-    CLB --> WEB
-    WEB --> API
+    CLB --> API
     API --> QD
     API --> LLM
-    WEB -. stdout/stderr .-> CW
     API -. stdout/stderr .-> CW
     QD -. stdout/stderr .-> CW
 ```
@@ -48,11 +43,9 @@ flowchart LR
 ```text
 Browser
   |
-CLB (med-rag-web-service)
+CLB (med-rag-api-service)
   |
-NGINX Web
-  |
-FastAPI RAG API
+FastAPI RAG API + Web UI
   |
 Qdrant
 ```
@@ -83,12 +76,8 @@ kubectl apply -f kube-manifests/05-qdrant-service.yaml
 kubectl apply -f kube-manifests/06-api-configmap.yaml
 kubectl apply -f kube-manifests/07-api-deployment.yaml
 kubectl apply -f kube-manifests/08-api-service.yaml
-kubectl apply -f kube-manifests/09-web-configmap.yaml
-kubectl apply -f kube-manifests/10-web-deployment.yaml
-kubectl apply -f kube-manifests/11-web-service.yaml
 ```
-
-현재 [11-web-service.yaml](/home/AWS-EKS-Class-Master/20-EKS-AI-Korean-Medi-RAG/kube-manifests/11-web-service.yaml) 은 별도 NLB annotation 없이 `type: LoadBalancer` 만 사용하므로 CLB 실습형입니다.
+현재 [08-api-service.yaml](/home/AWS-EKS-Class-Master/20-EKS-AI-Korean-Medi-RAG/kube-manifests/08-api-service.yaml) 이 별도 NLB annotation 없이 `type: LoadBalancer` 만 사용하므로 CLB 실습형입니다.
 
 ## Step-04: 샘플 데이터 적재
 
@@ -102,7 +91,7 @@ kubectl logs -f job/med-rag-indexer -n med-rag
 ## Step-05: 사용자 접속
 
 ```bash
-kubectl get svc med-rag-web-service -n med-rag \
+kubectl get svc med-rag-api-service -n med-rag \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
@@ -148,10 +137,8 @@ curl -X POST http://<ELB-HOSTNAME>/ask \
 - [04-qdrant-statefulset.yaml](/home/AWS-EKS-Class-Master/20-EKS-AI-Korean-Medi-RAG/kube-manifests/04-qdrant-statefulset.yaml)
   Qdrant 저장소
 - [07-api-deployment.yaml](/home/AWS-EKS-Class-Master/20-EKS-AI-Korean-Medi-RAG/kube-manifests/07-api-deployment.yaml)
-  FastAPI RAG 앱
-- [09-web-configmap.yaml](/home/AWS-EKS-Class-Master/20-EKS-AI-Korean-Medi-RAG/kube-manifests/09-web-configmap.yaml)
-  Web UI와 API 프록시
-- [11-web-service.yaml](/home/AWS-EKS-Class-Master/20-EKS-AI-Korean-Medi-RAG/kube-manifests/11-web-service.yaml)
+  FastAPI RAG 앱과 Web UI를 함께 띄우는 단일 서버
+- [08-api-service.yaml](/home/AWS-EKS-Class-Master/20-EKS-AI-Korean-Medi-RAG/kube-manifests/08-api-service.yaml)
   CLB 생성용 외부 사용자 접속점
 - [12-indexer-job.yaml](/home/AWS-EKS-Class-Master/20-EKS-AI-Korean-Medi-RAG/kube-manifests/12-indexer-job.yaml)
   샘플 문서 적재
@@ -184,7 +171,6 @@ kubectl get daemonsets -n amazon-cloudwatch
 
 주요 로그 대상:
 - `med-rag-api`
-- `med-rag-web`
 - `qdrant`
 - `med-rag-indexer`
 
