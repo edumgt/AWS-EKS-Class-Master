@@ -40,7 +40,7 @@ eksctl utils associate-iam-oidc-provider \
 # 리전 및 클러스터 이름 교체
 eksctl utils associate-iam-oidc-provider \
     --region ap-northeast-2 \
-    --cluster eksdemo1 \
+    --cluster eksdemo2 \
     --approve
 ```
 

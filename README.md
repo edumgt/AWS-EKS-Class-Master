@@ -2,6 +2,8 @@
 
 ![alt text](image.png)
 
+![alt text](image-1.png)
+
 > `stacksimplify` 계열 실습을 바탕으로 현재 워크스페이스 기준으로 재정리한 EKS 교육용 저장소입니다.
 
 이 저장소는 Amazon EKS를 중심으로 클러스터 생성, 스토리지, 로드밸런싱, Fargate, DevOps, 마이크로서비스, 오토스케일링, 모니터링, 그리고 EKS 위에서 실제 앱을 서비스하는 실습까지 단계적으로 다룹니다.

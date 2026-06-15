@@ -6,7 +6,7 @@
 - Kubernetes Deployment 매니페스트에서 ECR 이미지 리포지토리 URL을 업데이트합니다.
 - EKS에 배포합니다.
 - Kubernetes Deployment, NodePort Service, Ingress Service, External-DNS를 사용해 전체 배포 흐름을 보여줍니다.
-- 등록된 DNS `http://ecrdemo.kubeoncloud.com`으로 ECR 데모 애플리케이션에 접근합니다.
+
 
 ## Step-02: ECR 용어
 - **레지스트리(Registry):** 각 AWS 계정마다 ECR 레지스트리가 제공되며, 레지스트리 안에 이미지 리포지토리를 만들고 이미지를 저장합니다.
@@ -56,7 +56,7 @@ aws ecr create-repository --repository-name <your-repo-name> --region <your-regi
 ```
 # Build Docker Image
 docker build -t <ECR-REPOSITORY-URI>:<TAG> . 
-docker build -t 180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:1.0.0 . 
+docker build -t 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:1.0.0 . 
 
 # Run Docker Image locally & Test
 docker run --name <name-of-container> -p 80:80 --rm -d <ECR-REPOSITORY-URI>:<TAG>
@@ -78,11 +78,11 @@ docker ps -a -q
 ```
 # Get Login Password
 aws ecr get-login-password --region <your-region> | docker login --username AWS --password-stdin <ECR-REPOSITORY-URI>
-aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx
+aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx
 
 # Push the Docker Image
 docker push <ECR-REPOSITORY-URI>:<TAG>
-docker push 180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:1.0.0
+docker push 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:1.0.0
 ```
 - AWS ECR에서 새로 푸시된 Docker 이미지를 확인합니다.
 - 취약점 스캔 결과를 확인합니다.
@@ -90,7 +90,7 @@ docker push 180789647333.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:
 ## Step-07: Amazon EKS에서 ECR 이미지 사용
 
 ### k8s 매니페스트 확인
-- **10-ECR-Elastic-Container-Registry\02-kube-manifests** 폴더에 있는 Deployment 및 Service Kubernetes 매니페스트를 이해합니다.
+- **02-kube-manifests** 폴더에 있는 Deployment 및 Service Kubernetes 매니페스트를 이해합니다.
   - **Deployment:** 01-ECR-Nginx-Deployment.yml
   - **NodePort Service:** 02-ECR-Nginx-NodePortService.yml
   - **ALB Ingress Service:** 03-ECR-Nginx-ALB-IngressService.yml
@@ -118,13 +118,12 @@ kubectl get ingress
 ```
 ### 애플리케이션 접근
 - ALB Ingress가 프로비저닝될 때까지 대기
-- Route 53 DNS 등록 `ecrdemo.kubeoncloud.com` 확인
 ```
 # Get external ip of EKS Cluster Kubernetes worker nodes
 kubectl get nodes -o wide
 
 # Access Application
-http://ecrdemo.kubeoncloud.com/index.html
+http://<<node-EIP>>/index.html
 ```
 
 ## Step-08: 정리
