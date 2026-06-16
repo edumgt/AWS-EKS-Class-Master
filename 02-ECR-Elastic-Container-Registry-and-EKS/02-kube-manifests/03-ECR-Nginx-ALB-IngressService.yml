@@ -7,7 +7,7 @@ metadata:
     app: kubeapp-ecr
   annotations:
     # Load Balancer Name
-    alb.ingress.kubernetes.io/load-balancer-name: ecr-ingress
+    alb.ingress.kubernetes.io/load-balancer-name: ecr-ingress-eksdemo1
     # Ingress Core Settings  
     #kubernetes.io/ingress.class: "alb" (OLD INGRESS CLASS NOTATION - STILL WORKS BUT RECOMMENDED TO USE IngressClass Resource)
     alb.ingress.kubernetes.io/scheme: internet-facing

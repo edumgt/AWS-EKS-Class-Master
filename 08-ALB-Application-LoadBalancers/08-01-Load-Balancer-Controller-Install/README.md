@@ -82,7 +82,7 @@ OIDC Provider = "이 EKS 클러스터에서 나온 서비스어카운트 토큰�
 ```
 eksctl utils associate-iam-oidc-provider \
     --region ap-northeast-2 \
-    --cluster eksdemo1 \
+    --cluster eksdemo2 \
     --approve
 ```
 # 프라이빗 서브넷용 EKS NodeGroup 생성 예시
@@ -235,7 +235,7 @@ IAM Role + ServiceAccount 생성:
 
 ```bash
 eksctl create iamserviceaccount \
-  --cluster eksdemo1 \
+  --cluster eksdemo2 \
   --namespace kube-system \
   --name aws-load-balancer-controller \
   --attach-policy-arn arn:aws:iam::086015456585:policy/AWSLoadBalancerControllerIAMPolicy \

@@ -20,9 +20,8 @@ spec:
     targetPort: 8095
 ```
 
----
-```
-service.beta.kubernetes.io/aws-load-balancer-type: nlb 는 Kubernetes Service(Type=LoadBalancer) 를 만들 때 AWS에서 Network Load Balancer(NLB) 로 생성하라고 지시하는 어노테이션이에요.
+### service.beta.kubernetes.io/aws-load-balancer-type: nlb 는 Kubernetes Service(Type=LoadBalancer) 
+### 만들 때 AWS에서 Network Load Balancer(NLB) 로 생성하라고 지시하는 어노테이션이에요.
 
 아래는 NLB vs CLB(Classic Load Balancer) 핵심 차이입니다.
 
