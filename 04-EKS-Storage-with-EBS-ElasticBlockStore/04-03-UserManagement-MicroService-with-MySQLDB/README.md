@@ -59,6 +59,11 @@ kubectl get nodes -o wide
 # User Management 서비스 상태 점검 API 접근
 http://<EKS-WorkerNode-Public-IP>:31231/usermgmt/health-status
 ```
+---
+```
+http://54.116.222.123:31231/usermgmt/health-status
+
+
 
 ## Step-04: Postman으로 User Management 마이크로서비스 테스트
 ### Postman 클라이언트 다운로드

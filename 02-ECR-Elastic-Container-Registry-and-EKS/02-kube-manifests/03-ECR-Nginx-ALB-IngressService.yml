@@ -27,13 +27,20 @@ spec:
   ingressClassName: alb
   rules:
     - http:
-        paths:      
+        paths:
+          - path: /usermgmt
+            pathType: Prefix
+            backend:
+              service:
+                name: usermgmt-restapp-service
+                port:
+                  number: 8095
           - path: /
             pathType: Prefix
             backend:
               service:
                 name: kubeapp-ecr-nodeport-service
-                port: 
-                  number: 80                                   
-# Important Note-1: In path based routing order is very important, if we are going to use  "/*", try to use it at the end of all rules.         
+                port:
+                  number: 80
+# Important Note-1: In path based routing order is very important, if we are going to use  "/*", try to use it at the end of all rules.
 

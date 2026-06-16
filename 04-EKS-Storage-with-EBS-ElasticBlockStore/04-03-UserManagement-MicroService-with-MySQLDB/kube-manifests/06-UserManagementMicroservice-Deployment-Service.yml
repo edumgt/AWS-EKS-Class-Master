@@ -21,7 +21,7 @@ spec:
             - containerPort: 8095           
           env:
             - name: DB_HOSTNAME
-              value: "mysql"            
+              value: "mariadb"            
             - name: DB_PORT
               value: "3306"            
             - name: DB_NAME

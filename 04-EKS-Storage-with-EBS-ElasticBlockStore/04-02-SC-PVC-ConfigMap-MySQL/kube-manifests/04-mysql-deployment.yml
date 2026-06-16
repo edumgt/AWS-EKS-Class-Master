@@ -1,37 +1,37 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mysql
+  name: mariadb
 spec: 
   replicas: 1
   selector:
     matchLabels:
-      app: mysql
+      app: mariadb
   strategy:
     type: Recreate 
   template: 
     metadata: 
       labels: 
-        app: mysql
+        app: mariadb
     spec: 
       containers:
-        - name: mysql
-          image: mysql:8.0
+        - name: mariadb
+          image: mariadb:11.4
           env:
-            - name: MYSQL_ROOT_PASSWORD
+            - name: MARIADB_ROOT_PASSWORD
               value: dbpassword11
           ports:
             - containerPort: 3306
-              name: mysql    
+              name: mariadb    
           volumeMounts:
-            - name: mysql-persistent-storage
+            - name: mariadb-persistent-storage
               mountPath: /var/lib/mysql    
             - name: usermanagement-dbcreation-script
               mountPath: /docker-entrypoint-initdb.d             
       volumes: 
-        - name: mysql-persistent-storage
+        - name: mariadb-persistent-storage
           persistentVolumeClaim:
-            claimName: ebs-mysql-pv-claim
+            claimName: ebs-mariadb-pv-claim
         - name: usermanagement-dbcreation-script
           configMap:
             name: usermanagement-dbcreation-script
