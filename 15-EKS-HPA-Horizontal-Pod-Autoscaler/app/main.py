@@ -202,9 +202,17 @@ async def startup_event():
     logger.info("Loaded %s sessions from Redis", len(active_sessions))
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def root():
-    """헬스 체크 엔드포인트"""
+    """프론트엔드 UI"""
+    import os
+    html_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
+    with open(html_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/api/status")
+async def api_status():
     return {
         "service": "Jupyter Lab Pod Manager",
         "status": "running",

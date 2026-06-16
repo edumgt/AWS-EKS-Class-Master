@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 애플리케이션 코드 복사
 COPY main.py .
+COPY static/ ./static/
 
 # 비-root 사용자 생성 및 전환
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app

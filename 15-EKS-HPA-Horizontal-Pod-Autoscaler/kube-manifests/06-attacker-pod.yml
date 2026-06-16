@@ -1,0 +1,206 @@
+---
+# 공격 스크립트를 담은 ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: attacker-script
+  labels:
+    app: hpa-attacker
+data:
+  attack.py: |
+    #!/usr/bin/env python3
+    """
+    HPA 부하 공격 Pod - 클러스터 내부에서 jupyter-manager-service 직접 타격
+    Phase 1: CPU 스파이크  → HPA scaleUp 트리거
+    Phase 2: 세션 폭주     → 백엔드 메모리 / 큐 압박
+    Phase 3: 부하 유지     → HPA 안정화 관찰
+    """
+    import requests
+    import concurrent.futures
+    import time
+    import threading
+    import sys
+    import os
+
+    TARGET = os.getenv("TARGET_URL", "http://jupyter-manager-service")
+    WORKERS = int(os.getenv("WORKERS", "20"))
+    ATTACK_USERS = [f"attacker{i:02d}" for i in range(1, 21)]
+    PASSWORD = "123456"
+    stop_event = threading.Event()
+
+    def login(username):
+        try:
+            r = requests.post(f"{TARGET}/auth/login",
+                              json={"username": username, "password": PASSWORD},
+                              timeout=10)
+            if r.status_code == 200:
+                return r.json().get("access_token")
+        except Exception:
+            pass
+        return None
+
+    def cpu_flood(worker_id):
+        """CPU 부하 엔드포인트 무한 호출"""
+        count = 0
+        while not stop_event.is_set():
+            try:
+                r = requests.post(f"{TARGET}/load/generate", timeout=30)
+                count += 1
+                if count % 10 == 0:
+                    print(f"[cpu-worker-{worker_id:02d}] {count} reqs done", flush=True)
+            except Exception as e:
+                print(f"[cpu-worker-{worker_id:02d}] err: {e}", flush=True)
+        return count
+
+    def session_flood(username, token):
+        """세션 생성 반복 호출"""
+        count = 0
+        while not stop_event.is_set():
+            try:
+                r = requests.post(
+                    f"{TARGET}/users/{username}/session",
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=20
+                )
+                count += 1
+                if count % 5 == 0:
+                    status = r.json().get("status", "?") if r.status_code == 200 else f"HTTP {r.status_code}"
+                    print(f"[session-{username}] {count} reqs, last={status}", flush=True)
+            except Exception as e:
+                print(f"[session-{username}] err: {e}", flush=True)
+        return count
+
+    def watch_metrics(interval=5):
+        """메트릭 주기 출력"""
+        while not stop_event.is_set():
+            try:
+                r = requests.get(f"{TARGET}/metrics", timeout=5)
+                if r.status_code == 200:
+                    d = r.json()
+                    print(f"[metrics] active_sessions={d.get('active_sessions', '?')}", flush=True)
+            except Exception:
+                pass
+            time.sleep(interval)
+
+    def phase(label, secs):
+        print(f"\n{'='*50}", flush=True)
+        print(f"  {label}", flush=True)
+        print(f"{'='*50}", flush=True)
+        time.sleep(secs)
+
+    # ── Phase 0: 준비 ──
+    print("=== HPA 공격 Pod 시작 ===", flush=True)
+    print(f"Target: {TARGET}", flush=True)
+    print(f"Workers: {WORKERS}", flush=True)
+    print("토큰 발급 중...", flush=True)
+    tokens = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+        fs = {ex.submit(login, u): u for u in ATTACK_USERS}
+        for f in concurrent.futures.as_completed(fs):
+            u = fs[f]
+            tok = f.result()
+            if tok:
+                tokens[u] = tok
+                print(f"  [✓] {u}", flush=True)
+            else:
+                print(f"  [✗] {u} 로그인 실패", flush=True)
+
+    print(f"\n토큰 확보: {len(tokens)}/{len(ATTACK_USERS)}", flush=True)
+
+    # ── Phase 1: CPU 스파이크 (60초) ──
+    phase("Phase 1: CPU 스파이크 — /load/generate 폭주 (60초)", 0)
+    futures = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=WORKERS) as ex:
+        # CPU 부하 워커
+        for i in range(WORKERS):
+            futures.append(ex.submit(cpu_flood, i))
+        # 메트릭 감시 스레드
+        t_watch = threading.Thread(target=watch_metrics, args=(8,), daemon=True)
+        t_watch.start()
+
+        time.sleep(60)
+        stop_event.set()
+        total_cpu_reqs = sum(f.result(timeout=5) for f in futures if not f.exception())
+
+    stop_event.clear()
+    print(f"\nPhase 1 완료 — 총 CPU 요청: {total_cpu_reqs}", flush=True)
+    time.sleep(5)
+
+    # ── Phase 2: 세션 폭주 (60초) ──
+    phase("Phase 2: 세션 폭주 — Jupyter Pod 대량 생성 요청 (60초)", 0)
+    session_futures = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(tokens)) as ex:
+        for u, tok in tokens.items():
+            session_futures.append(ex.submit(session_flood, u, tok))
+        # CPU도 병행
+        cpu_futures = [ex.submit(cpu_flood, i) for i in range(5)]
+
+        t_watch2 = threading.Thread(target=watch_metrics, args=(10,), daemon=True)
+        t_watch2.start()
+
+        time.sleep(60)
+        stop_event.set()
+
+    stop_event.clear()
+    print("\nPhase 2 완료", flush=True)
+    time.sleep(5)
+
+    # ── Phase 3: 지속 부하 (120초) ──
+    phase("Phase 3: 지속 부하 유지 — HPA 안정화 관찰 (120초)", 0)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+        futs = [ex.submit(cpu_flood, i) for i in range(10)]
+        t_watch3 = threading.Thread(target=watch_metrics, args=(15,), daemon=True)
+        t_watch3.start()
+
+        time.sleep(120)
+        stop_event.set()
+
+    print("\n=== 공격 완료. Pod는 종료됩니다. ===", flush=True)
+
+---
+# 공격 Pod Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpa-attacker
+  labels:
+    app: hpa-attacker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hpa-attacker
+  template:
+    metadata:
+      labels:
+        app: hpa-attacker
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: attacker
+        image: python:3.11-slim
+        command: ["sh", "-c"]
+        args:
+          - |
+            pip install requests -q &&
+            python /scripts/attack.py
+        env:
+        - name: TARGET_URL
+          value: "http://jupyter-manager-service"
+        - name: WORKERS
+          value: "20"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+        volumeMounts:
+        - name: script-vol
+          mountPath: /scripts
+      volumes:
+      - name: script-vol
+        configMap:
+          name: attacker-script
+          defaultMode: 0755
