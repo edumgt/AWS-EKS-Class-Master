@@ -1,0 +1,25 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: eksdemo1
+  region: ap-northeast-2
+  version: "1.34"
+
+vpc:
+  cidr: "10.0.0.0/16"
+  nat:
+    gateway: Single
+
+availabilityZones:
+  - ap-northeast-2a
+  - ap-northeast-2b
+
+managedNodeGroups:
+  - name: eksdemo1-ng-private1
+    instanceType: t3.medium
+    amiFamily: AmazonLinux2023
+    desiredCapacity: 2
+    minSize: 2
+    maxSize: 4
+    privateNetworking: true

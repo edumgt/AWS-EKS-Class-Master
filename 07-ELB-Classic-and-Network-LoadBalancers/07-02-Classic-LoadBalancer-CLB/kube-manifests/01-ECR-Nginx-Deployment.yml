@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: kubeapp-ecr
-          image: 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx:latest
+          image: 086015456585.dkr.ecr.ap-northeast-2.amazonaws.com/aws-ecr-kubenginx
           ports:
             - containerPort: 80
